@@ -106,55 +106,52 @@
     }
 
     function showPlayerModal(name) {
-      const scores = history
-        .filter(entry => entry.Name === name)
-        .map(e => ({
-          competition: e.Competition,
-          score: parseFloat(e.Score),
-          points: parseFloat(e.Points),
-          position: parseInt(e.Position)
-        }));
+    const scores = history
+      .filter(entry => entry.Name === name)
+      .map(e => ({
+        competition: e.Competition || "Unknown",
+        score: parseFloat(e.Score),
+        points: parseFloat(e.Points),
+        position: parseInt(e.Position)
+      }))
+      .sort((a, b) => a.competition.localeCompare(b.competition));
 
-      document.getElementById('modalTitle').innerText = `${name}'s Score History`;
+    document.getElementById('modalTitle').innerText = `${name}'s Competition History`;
 
-      const scoreList = document.getElementById('scoreList');
-      scoreList.innerHTML = '';
-      scores.forEach(s => {
-        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Points ${s.points}, Position ${s.position}</li>`;
-      });
+    const scoreList = document.getElementById('scoreList');
+    scoreList.innerHTML = '';
+    scores.forEach(s => {
+      scoreList.innerHTML += `<li>${s.competition}: Score ${s.score}, Points ${s.points}, Position ${s.position}</li>`;
+    });
 
-      const ctx = document.getElementById('scoreChart').getContext('2d');
-      if (window.scoreChart instanceof Chart) window.scoreChart.destroy();
+    const ctx = document.getElementById('scoreChart').getContext('2d');
 
-      window.scoreChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: scores.map(s => s.competition),
-          datasets: [
-            {
-              label: 'Net Score',
-              data: scores.map(s => s.score),
-              borderColor: 'blue',
-              fill: false,
-              tension: 0.2
-            },
-            {
-              label: 'Points',
-              data: scores.map(s => s.points),
-              borderColor: 'green',
-              fill: false,
-              tension: 0.2
-            }
-          ]
-        }
-      });
-
-      document.getElementById('scoreModal').style.display = 'flex';
+    if (window.scoreChart instanceof Chart) {
+      window.scoreChart.destroy();
     }
 
-    function closeModal() {
-      document.getElementById('scoreModal').style.display = 'none';
-    }
-  </script>
-</body>
-</html>
+    window.scoreChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: scores.map(s => s.competition),
+        datasets: [
+          {
+            label: 'Net Score',
+            data: scores.map(s => s.score),
+            fill: false,
+            borderColor: 'blue',
+            tension: 0.2
+          },
+          {
+            label: 'Points',
+            data: scores.map(s => s.points),
+            fill: false,
+            borderColor: 'green',
+            tension: 0.2
+          }
+        ]
+      }
+    });
+
+    document.getElementById('scoreModal').style.display = 'flex';
+  }
