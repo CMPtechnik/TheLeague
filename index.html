@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>League Table</title>
-  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="icon" href="favicon.png" type="image/png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -24,11 +24,11 @@
   <div class="logo-container">
     <img src="logo.png" alt="League Logo" />
   </div>
-  <h1>Cheadle Golf League Table</h1>
-  <h4>Last Update - Wed 9 April 15:37</h4>
+  <h1>Cheadle Golf League </h1>
+  <h4>Last Update - Wed 9 April 21:41</h4>
 
   <table id="league-table">
-    <tr><th>Rank</th><th>Name</th><th>Avg Score</th><th>Games</th><th>Total Points</th><th>Net Win %</th></tr>
+    <tr><th>Rank</th><th>Name</th><th>Total Points</th><th>Avg Net</th><th>Games</th><th>Net Win %</th></tr>
   </table>
 
   <div class="modal" id="scoreModal">
@@ -54,39 +54,43 @@
       });
 
     function updateLeague(data) {
-      const playerData = {};
-      const netWins = {};
+      const players = {};
+      const rounds = {};
 
       data.forEach(entry => {
-        const { Name, Score, Position, Points, Competition } = entry;
-        const score = parseFloat(Score);
+        const { Name, Score, Points, Position, Competition } = entry;
+        const net = parseFloat(Score);
         const points = parseFloat(Points);
-        const position = parseInt(Position);
 
-        if (!playerData[Name]) {
-          playerData[Name] = { scores: [], points: 0 };
+        if (!players[Name]) {
+          players[Name] = { scores: [], points: 0, wins: 0 };
         }
 
-        playerData[Name].scores.push(score);
-        playerData[Name].points += points;
+        players[Name].scores.push(net);
+        players[Name].points += points;
 
-        const compWinners = data.filter(e => e.Competition === Competition && parseInt(e.Position) === 1);
-        compWinners.forEach(winner => {
-          netWins[winner.Name] = (netWins[winner.Name] || 0) + 1;
+        if (!rounds[Competition]) rounds[Competition] = [];
+        rounds[Competition].push({ name: Name, net });
+      });
+
+      Object.values(rounds).forEach(playersInRound => {
+        const minNet = Math.min(...playersInRound.map(p => p.net));
+        playersInRound.forEach(p => {
+          if (p.net === minNet) {
+            players[p.name].wins = (players[p.name].wins || 0) + 1;
+          }
         });
       });
 
-      const league = Object.keys(playerData).map(name => {
-        const scores = playerData[name].scores;
-        const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-        const totalPoints = playerData[name].points;
-        const games = scores.length;
-        const winPct = ((netWins[name] || 0) / games * 100).toFixed(1);
-
+      const league = Object.keys(players).map(name => {
+        const player = players[name];
+        const netAvg = player.scores.reduce((a, b) => a + b, 0) / player.scores.length;
+        const games = player.scores.length;
+        const winPct = games > 0 ? ((player.wins || 0) / games * 100).toFixed(1) : '0.0';
         return {
           name,
-          avgScore: avgScore.toFixed(2),
-          totalPoints,
+          totalPoints: player.points,
+          netAvg: netAvg.toFixed(2),
           games,
           winPct
         };
@@ -97,62 +101,51 @@
 
     function renderTable(data) {
       const table = document.getElementById('league-table');
-      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Score</th><th>Games</th><th>Total Points</th><th>Net Win %</th></tr>';
+      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Total Points</th><th>Avg Net</th><th>Games</th><th>Net Win %</th></tr>';
       data.forEach((player, i) => {
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
-          <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}</a></td>
-          <td>${player.avgScore}</td>
-          <td>${player.games}</td>
+          <td><a href="#" onclick="showPlayerModal('${player.name}', ${i + 1})">${player.name}</a></td>
           <td>${player.totalPoints}</td>
+          <td>${player.netAvg}</td>
+          <td>${player.games}</td>
           <td>${player.winPct}%</td>
         </tr>`;
       });
     }
 
-    function showPlayerModal(name) {
+    function showPlayerModal(name, rank) {
       const scores = history
         .filter(entry => entry.Name === name)
         .map(e => ({
-          competition: e.Competition || "Unknown",
-          score: parseFloat(e.Score),
-          points: parseFloat(e.Points),
-          position: parseInt(e.Position)
-        }))
-        .sort((a, b) => a.competition.localeCompare(b.competition));
+          comp: e.Competition,
+          net: parseFloat(e.Score),
+          points: e.Points,
+          pos: e.Position
+        }));
 
-      document.getElementById('modalTitle').innerText = `${name}'s Competition History`;
+      document.getElementById('modalTitle').innerText = `${name} (Rank #${rank}) Score History`;
 
       const scoreList = document.getElementById('scoreList');
       scoreList.innerHTML = '';
       scores.forEach(s => {
-        scoreList.innerHTML += `<li>${s.competition}: Score ${s.score}, Points ${s.points}, Position ${s.position}</li>`;
+        scoreList.innerHTML += `<li>${s.comp}: Net ${s.net}, Points ${s.points}, Position ${s.pos}</li>`;
       });
 
       const ctx = document.getElementById('scoreChart').getContext('2d');
-
-      if (window.scoreChart instanceof Chart) {
-        window.scoreChart.destroy();
-      }
+      if (window.scoreChart instanceof Chart) window.scoreChart.destroy();
 
       window.scoreChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: scores.map(s => s.competition),
+          labels: scores.map(s => s.comp),
           datasets: [
             {
               label: 'Net Score',
-              data: scores.map(s => s.score),
-              fill: false,
+              data: scores.map(s => s.net),
               borderColor: 'blue',
-              tension: 0.2
-            },
-            {
-              label: 'Points',
-              data: scores.map(s => s.points),
               fill: false,
-              borderColor: 'green',
-              tension: 0.2
+              tension: 0.1
             }
           ]
         }
