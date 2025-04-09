@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>League Table</title>
+  <link rel="icon" href="favicon.png" type="image/png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 2rem auto; padding: 1rem; }
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 2rem auto; padding: 1rem; }
     h1 { text-align: center; }
     h4 { text-align: center; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -29,7 +29,7 @@
   <h4><font color="#FF0000"> Last Update - Tue 9 April </font>| Last Competition Single Stableford 5th April</h4>
   <h4>League Champions Pot <u>£10.20</u></h4>
   <table id="league-table">
-    <tr><th>Rank</th><th>Name</th><th>Avg Gross</th><th>Avg Net</th><th>Games</th><th>Net Win %</th><th>Winnings</th></tr>
+    <tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>
   </table>
 
   <div class="modal" id="scoreModal">
@@ -44,126 +44,119 @@
   <script>
     let history = [];
 
-    // Fetch data from GitHub
     fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet);
-        history = json;  // Store the data in the 'history' variable
-        updateLeague(history);  // Use 'history' to update the league table
+        history = json;
+        updateLeague(history);
       });
 
-    // Update the league table
-    function updateLeague(newData) {
-      const grossScores = {};
+    function updateLeague(data) {
       const netScores = {};
       const netWins = {};
       const totalPoints = {};
-      const rounds = [];
+      const totalWinnings = {};
+      const rounds = {};
 
-      newData.forEach(entry => {
-        const { Name, Score, Position, Points, Winnings } = entry;
+      data.forEach(entry => {
+        const { Name, Score, Position, Points, Winnings, Competition } = entry;
         const net = parseFloat(Score);
-        const points = parseInt(Points);
-        const winnings = parseFloat(Winnings) || 0;
+        if (isNaN(net)) return;
 
-        if (!grossScores[Name]) grossScores[Name] = [];
         if (!netScores[Name]) netScores[Name] = [];
-        if (!totalPoints[Name]) totalPoints[Name] = 0;
+        if (!rounds[Competition]) rounds[Competition] = [];
 
-        grossScores[Name].push(net); // Placeholder, as you might want to calculate gross too
         netScores[Name].push(net);
-        totalPoints[Name] += points; // Add points to total for each player
+        rounds[Competition].push({ name: Name, position: parseInt(Position) });
 
-        if (!rounds[Position]) rounds[Position] = [];
-        rounds[Position].push({ name: Name, net });
-
-        // Winnings
-        if (!netWins[Name]) netWins[Name] = 0;
-        if (Position === 1) netWins[Name] += 1;
+        totalPoints[Name] = (totalPoints[Name] || 0) + (parseFloat(Points) || 0);
+        totalWinnings[Name] = (totalWinnings[Name] || 0) + (parseFloat(Winnings) || 0);
       });
 
-      const league = Object.keys(grossScores).map(name => {
-        const grossAvg = grossScores[name].reduce((a, b) => a + b, 0) / grossScores[name].length;
+      // Calculate wins
+      Object.values(rounds).forEach(players => {
+        const winners = players.filter(p => p.position === 1);
+        winners.forEach(p => {
+          netWins[p.name] = (netWins[p.name] || 0) + 1;
+        });
+      });
+
+      const league = Object.keys(netScores).map(name => {
         const netAvg = netScores[name].reduce((a, b) => a + b, 0) / netScores[name].length;
         const games = netScores[name].length;
-        const winPct = ((netWins[name] || 0) / games * 100).toFixed(1);
-        const totalWinnings = totalPoints[name]; // Total points as winnings
-
+        const wins = netWins[name] || 0;
+        const winPct = ((wins / games) * 100).toFixed(1);
         return {
           name,
-          grossAvg: grossAvg.toFixed(2),
           netAvg: netAvg.toFixed(2),
           games,
           winPct,
-          totalWinnings
+          points: totalPoints[name] || 0,
+          winnings: totalWinnings[name] || 0
         };
-      }).sort((a, b) => b.totalPoints - a.totalPoints); // Sort by total points
+      }).sort((a, b) => b.points - a.points); // Sort by total points
 
       renderTable(league);
     }
 
-    // Render the league table
     function renderTable(data) {
       const table = document.getElementById('league-table');
-      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Gross</th><th>Avg Net</th><th>Games</th><th>Net Win %</th><th>Winnings</th></tr>';
+      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Score</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>';
       data.forEach((player, i) => {
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
           <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}</a></td>
-          <td>${player.grossAvg}</td>
           <td>${player.netAvg}</td>
           <td>${player.games}</td>
           <td>${player.winPct}%</td>
-          <td>£${player.totalWinnings}</td>
+          <td>${player.points}</td>
+          <td>£${player.winnings.toFixed(2)}</td>
         </tr>`;
       });
     }
 
-    // Show player modal with score history
     function showPlayerModal(name) {
       const scores = history.filter(entry => entry.Name === name)
-        .map(e => ({ round: e.Competition, gross: parseFloat(e.Score), net: parseFloat(e.Score) }))
-        .sort((a, b) => ('' + a.round).localeCompare(b.round));
+        .map(e => ({
+          competition: e.Competition,
+          score: parseFloat(e.Score),
+          position: e.Position,
+          points: e.Points,
+          winnings: isNaN(parseFloat(e.Winnings)) ? 0 : parseFloat(e.Winnings)
+        }))
+        .sort((a, b) => ('' + a.competition).localeCompare(b.competition));
 
       document.getElementById('modalTitle').innerText = `${name}'s Score History`;
 
       const scoreList = document.getElementById('scoreList');
       scoreList.innerHTML = '';
       scores.forEach(s => {
-        scoreList.innerHTML += `<li>${s.round}: Net ${s.net}</li>`;
+        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Points ${s.points}, Winnings £${parseFloat(s.winnings).toFixed(2)}</li>`;
       });
 
       const ctx = document.getElementById('scoreChart').getContext('2d');
+      if (window.scoreChart instanceof Chart) window.scoreChart.destroy();
 
-      // Destroy the previous chart if it exists
-      if (window.scoreChart instanceof Chart) {
-        window.scoreChart.destroy(); // Only destroy if it's a valid chart instance
-      }
-
-      // Create a new chart
       window.scoreChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: scores.map(s => s.round),
-          datasets: [
-            {
-              label: 'Net',
-              data: scores.map(s => s.net),
-              fill: false,
-              borderColor: 'blue',
-              tension: 0.1
-            }
-          ]
+          labels: scores.map(s => s.competition),
+          datasets: [{
+            label: 'Net Score',
+            data: scores.map(s => s.score),
+            fill: false,
+            borderColor: 'blue',
+            tension: 0.1
+          }]
         }
       });
 
       document.getElementById('scoreModal').style.display = 'flex';
     }
 
-    // Close the player modal
     function closeModal() {
       document.getElementById('scoreModal').style.display = 'none';
     }
