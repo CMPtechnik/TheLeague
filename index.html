@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>League Table</title>
   <link rel="icon" href="favicon.png" type="image/png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 2rem auto; padding: 1rem; }
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 2rem auto; padding: 1rem; }
     h1 { text-align: center; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
@@ -25,11 +25,10 @@
     <img src="logo.png" alt="League Logo">
   </div>
   <h1>Cheadle Golf League Table</h1>
- <h4>Last Update - Wed 9 April 15:37 | Last Competition Single Stableford 5th April</h4>
- <h4>League Winners Pot £10.20</h4>
-
+  <h4>Last Update - Tue 9 April | Last Competition Single Stableford 5th April</h4>
+  <h4>League Champions Pot £10.20</h4>
   <table id="league-table">
-    <tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Points</th><th>Win %</th></tr>
+    <tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>
   </table>
 
   <div class="modal" id="scoreModal">
@@ -44,7 +43,7 @@
   <script>
     let history = [];
 
-    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata")
+    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
@@ -55,74 +54,86 @@
       });
 
     function updateLeague(data) {
-      const playerStats = {};
+      const netScores = {};
+      const netWins = {};
+      const totalPoints = {};
+      const totalWinnings = {};
+      const rounds = {};
 
       data.forEach(entry => {
-        const name = entry.Name;
-        const net = parseFloat(entry.Score);
-        const points = parseFloat(entry.Points) || 0;
-        const position = parseInt(entry.Position);
+        const { Name, Score, Position, Points, Winnings, Competition } = entry;
+        const net = parseFloat(Score);
+        if (isNaN(net)) return;
 
-        if (!playerStats[name]) {
-          playerStats[name] = { netScores: [], totalPoints: 0, wins: 0 };
-        }
+        if (!netScores[Name]) netScores[Name] = [];
+        if (!rounds[Competition]) rounds[Competition] = [];
 
-        playerStats[name].netScores.push(net);
-        playerStats[name].totalPoints += points;
-        if (position === 1) {
-          playerStats[name].wins += 1;
-        }
+        netScores[Name].push(net);
+        rounds[Competition].push({ name: Name, position: parseInt(Position) });
+
+        totalPoints[Name] = (totalPoints[Name] || 0) + (parseFloat(Points) || 0);
+        totalWinnings[Name] = (totalWinnings[Name] || 0) + (parseFloat(Winnings) || 0);
       });
 
-      const league = Object.entries(playerStats).map(([name, stats]) => {
-        const games = stats.netScores.length;
-        const netAvg = stats.netScores.reduce((a, b) => a + b, 0) / games;
-        const winPct = games > 0 ? ((stats.wins / games) * 100).toFixed(1) : '0.0';
+      // Calculate wins
+      Object.values(rounds).forEach(players => {
+        const winners = players.filter(p => p.position === 1);
+        winners.forEach(p => {
+          netWins[p.name] = (netWins[p.name] || 0) + 1;
+        });
+      });
 
+      const league = Object.keys(netScores).map(name => {
+        const netAvg = netScores[name].reduce((a, b) => a + b, 0) / netScores[name].length;
+        const games = netScores[name].length;
+        const wins = netWins[name] || 0;
+        const winPct = ((wins / games) * 100).toFixed(1);
         return {
           name,
           netAvg: netAvg.toFixed(2),
           games,
-          points: stats.totalPoints,
-          winPct
+          winPct,
+          points: totalPoints[name] || 0,
+          winnings: totalWinnings[name] || 0
         };
-      }).sort((a, b) => b.points - a.points);
+      }).sort((a, b) => b.points - a.points); // Sort by total points
 
       renderTable(league);
     }
 
     function renderTable(data) {
       const table = document.getElementById('league-table');
-      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Points</th><th>Win %</th></tr>';
-
+      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>';
       data.forEach((player, i) => {
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
-          <td><a href="#" onclick="showPlayerModal('${player.name}', ${i + 1})">${player.name}</a></td>
+          <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}</a></td>
           <td>${player.netAvg}</td>
           <td>${player.games}</td>
-          <td>${player.points}</td>
           <td>${player.winPct}%</td>
+          <td>${player.points}</td>
+          <td>£${player.winnings.toFixed(2)}</td>
         </tr>`;
       });
     }
 
-    function showPlayerModal(name, rank) {
-      const scores = history.filter(e => e.Name === name)
+    function showPlayerModal(name) {
+      const scores = history.filter(entry => entry.Name === name)
         .map(e => ({
-          round: e.Competition || e.Round,
-          net: parseFloat(e.Score),
+          competition: e.Competition,
+          score: parseFloat(e.Score),
           position: e.Position,
-          points: e.Points
+          points: e.Points,
+          winnings: e.Winnings
         }))
-        .sort((a, b) => ('' + a.round).localeCompare(b.round));
+        .sort((a, b) => ('' + a.competition).localeCompare(b.competition));
 
-      document.getElementById('modalTitle').innerText = `${name}'s Score History (Rank ${rank})`;
+      document.getElementById('modalTitle').innerText = `${name}'s Score History`;
 
       const scoreList = document.getElementById('scoreList');
       scoreList.innerHTML = '';
       scores.forEach(s => {
-        scoreList.innerHTML += `<li>${s.round}: Net ${s.net}, Points ${s.points}, Position ${s.position}</li>`;
+        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Points ${s.points}, Winnings £${parseFloat(s.winnings).toFixed(2)}</li>`;
       });
 
       const ctx = document.getElementById('scoreChart').getContext('2d');
@@ -131,16 +142,14 @@
       window.scoreChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: scores.map(s => s.round),
-          datasets: [
-            {
-              label: 'Net Score',
-              data: scores.map(s => s.net),
-              borderColor: 'blue',
-              fill: false,
-              tension: 0.1
-            }
-          ]
+          labels: scores.map(s => s.competition),
+          datasets: [{
+            label: 'Net Score',
+            data: scores.map(s => s.score),
+            fill: false,
+            borderColor: 'blue',
+            tension: 0.1
+          }]
         }
       });
 
