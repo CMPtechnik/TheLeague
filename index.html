@@ -44,7 +44,7 @@
     let history = [];
 
     // Fetch data from GitHub
-    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata")
+    fetch("https://raw.githubusercontent.com/cmptechnik/TheLeague/main/data/leaguedata")
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
