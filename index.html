@@ -22,13 +22,13 @@
 </head>
 <body>
   <div class="logo-container">
-    <img src="logo.png" alt="League Logo" />
+    <img src="logo.png" alt="League Logo">
   </div>
-  <h1>Cheadle Golf League </h1>
-  <h4>Last Update - Wed 9 April 21:41</h4>
+  <h1>Cheadle Golf League Table</h1>
+  <h4>Last Update - Tue 9 April 21:49</h4>
 
   <table id="league-table">
-    <tr><th>Rank</th><th>Name</th><th>Total Points</th><th>Avg Net</th><th>Games</th><th>Net Win %</th></tr>
+    <tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Points</th><th>Win %</th></tr>
   </table>
 
   <div class="modal" id="scoreModal">
@@ -54,82 +54,74 @@
       });
 
     function updateLeague(data) {
-      const players = {};
-      const rounds = {};
+      const playerStats = {};
 
       data.forEach(entry => {
-        const { Name, Score, Points, Position, Competition } = entry;
-        const net = parseFloat(Score);
-        const points = parseFloat(Points);
+        const name = entry.Name;
+        const net = parseFloat(entry.Score);
+        const points = parseFloat(entry.Points) || 0;
+        const position = parseInt(entry.Position);
 
-        if (!players[Name]) {
-          players[Name] = { scores: [], points: 0, wins: 0 };
+        if (!playerStats[name]) {
+          playerStats[name] = { netScores: [], totalPoints: 0, wins: 0 };
         }
 
-        players[Name].scores.push(net);
-        players[Name].points += points;
-
-        if (!rounds[Competition]) rounds[Competition] = [];
-        rounds[Competition].push({ name: Name, net });
+        playerStats[name].netScores.push(net);
+        playerStats[name].totalPoints += points;
+        if (position === 1) {
+          playerStats[name].wins += 1;
+        }
       });
 
-      Object.values(rounds).forEach(playersInRound => {
-        const minNet = Math.min(...playersInRound.map(p => p.net));
-        playersInRound.forEach(p => {
-          if (p.net === minNet) {
-            players[p.name].wins = (players[p.name].wins || 0) + 1;
-          }
-        });
-      });
+      const league = Object.entries(playerStats).map(([name, stats]) => {
+        const games = stats.netScores.length;
+        const netAvg = stats.netScores.reduce((a, b) => a + b, 0) / games;
+        const winPct = games > 0 ? ((stats.wins / games) * 100).toFixed(1) : '0.0';
 
-      const league = Object.keys(players).map(name => {
-        const player = players[name];
-        const netAvg = player.scores.reduce((a, b) => a + b, 0) / player.scores.length;
-        const games = player.scores.length;
-        const winPct = games > 0 ? ((player.wins || 0) / games * 100).toFixed(1) : '0.0';
         return {
           name,
-          totalPoints: player.points,
           netAvg: netAvg.toFixed(2),
           games,
+          points: stats.totalPoints,
           winPct
         };
-      }).sort((a, b) => b.totalPoints - a.totalPoints);
+      }).sort((a, b) => b.points - a.points);
 
       renderTable(league);
     }
 
     function renderTable(data) {
       const table = document.getElementById('league-table');
-      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Total Points</th><th>Avg Net</th><th>Games</th><th>Net Win %</th></tr>';
+      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Points</th><th>Win %</th></tr>';
+
       data.forEach((player, i) => {
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
           <td><a href="#" onclick="showPlayerModal('${player.name}', ${i + 1})">${player.name}</a></td>
-          <td>${player.totalPoints}</td>
           <td>${player.netAvg}</td>
           <td>${player.games}</td>
+          <td>${player.points}</td>
           <td>${player.winPct}%</td>
         </tr>`;
       });
     }
 
     function showPlayerModal(name, rank) {
-      const scores = history
-        .filter(entry => entry.Name === name)
+      const scores = history.filter(e => e.Name === name)
         .map(e => ({
-          comp: e.Competition,
+          round: e.Competition || e.Round,
           net: parseFloat(e.Score),
-          points: e.Points,
-          pos: e.Position
-        }));
+          position: e.Position,
+          points: e.Points
+        }))
+        .sort((a, b) => ('' + a.round).localeCompare(b.round));
 
-      document.getElementById('modalTitle').innerText = `${name} (Rank #${rank}) Score History`;
+      document.getElementById('modalTitle').innerText = `${name}'s Score History (Rank ${rank})`;
 
       const scoreList = document.getElementById('scoreList');
       scoreList.innerHTML = '';
       scores.forEach(s => {
-        scoreList.innerHTML += `<li>${s.comp}: Net ${s.net}, Points ${s.points}, Position ${s.pos}</li>`;
+        scoreList.innerHTML += `<li>${s.round}: Net ${s.net}, Points ${s.points}, Position ${s.position}</li>`;
       });
 
       const ctx = document.getElementById('scoreChart').getContext('2d');
@@ -138,7 +130,7 @@
       window.scoreChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: scores.map(s => s.comp),
+          labels: scores.map(s => s.round),
           datasets: [
             {
               label: 'Net Score',
