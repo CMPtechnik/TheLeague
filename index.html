@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>League Table</title>
+  <link rel="icon" href="favicon.png" type="image/png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -21,10 +22,10 @@
 </head>
 <body>
   <div class="logo-container">
-    <img src="logo.png" alt="League Logo">
+    <img src="logo.png" alt="League Logo" />
   </div>
-  <h1>Cheadle Golf League </h1>
-  <h4>Last Update - Wed 9 April 16:06 - Singlestableford</h4>
+  <h1>Cheadle Golf League Table</h1>
+  <h4>Last Update - Wed 9 April 15:37</h4>
 
   <table id="league-table">
     <tr><th>Rank</th><th>Name</th><th>Total Points</th><th>Games</th><th>Net Win %</th></tr>
@@ -36,66 +37,60 @@
       <h2 id="modalTitle"></h2>
       <canvas id="scoreChart" height="200"></canvas>
       <ul id="scoreList"></ul>
-      <p><strong>Overall Rank:</strong> <span id="playerRank"></span></p>
     </div>
   </div>
 
   <script>
     let history = [];
 
-    // Fetch data from GitHub
-    fetch("https://raw.githubusercontent.com/cmptechnik/TheLeague/main/data/leaguedata.xlsx")
+    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet);
-        history = json;  // Store the data in the 'history' variable
-        updateLeague(history);  // Use 'history' to update the league table
+        history = json;
+        updateLeague(history);
       });
 
-    // Update the league table
-    function updateLeague(newData) {
-      const totalPoints = {};
+    function updateLeague(data) {
+      const pointsMap = {};
+      const gamesMap = {};
       const netWins = {};
-      const rounds = [];
 
-      newData.forEach(entry => {
-        const { Name, Score, Position, Points, Competition } = entry;
-        const score = parseFloat(Score);
-        const points = parseInt(Points);
+      data.forEach(entry => {
+        const name = entry.Name;
+        const score = parseFloat(entry.Score);
+        const points = parseFloat(entry.Points);
+        const position = parseInt(entry.Position);
 
-        if (!totalPoints[Name]) totalPoints[Name] = 0;
-        if (!netWins[Name]) netWins[Name] = 0;
+        if (!pointsMap[name]) pointsMap[name] = 0;
+        if (!gamesMap[name]) gamesMap[name] = 0;
 
-        totalPoints[Name] += points;
+        pointsMap[name] += points;
+        gamesMap[name] += 1;
 
-        // Tracking wins based on Position
-        if (Position === '1') {
-          netWins[Name] += 1;  // Increase win count for the first position
+        if (position === 1) {
+          netWins[name] = (netWins[name] || 0) + 1;
         }
-
-        if (!rounds[Competition]) rounds[Competition] = [];
-        rounds[Competition].push({ name: Name, score });
       });
 
-      // Sort players by total points
-      const league = Object.keys(totalPoints).map(name => {
-        const games = newData.filter(entry => entry.Name === name).length;
-        const winPct = ((netWins[name] || 0) / games * 100).toFixed(1);
+      const league = Object.keys(pointsMap).map(name => {
+        const games = gamesMap[name];
+        const wins = netWins[name] || 0;
+        const winPct = games > 0 ? ((wins / games) * 100).toFixed(1) : "0.0";
 
         return {
           name,
-          totalPoints: totalPoints[name],
+          points: pointsMap[name],
           games,
           winPct
         };
-      }).sort((a, b) => b.totalPoints - a.totalPoints);
+      }).sort((a, b) => b.points - a.points); // highest total points first
 
       renderTable(league);
     }
 
-    // Render the league table
     function renderTable(data) {
       const table = document.getElementById('league-table');
       table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Total Points</th><th>Games</th><th>Net Win %</th></tr>';
@@ -103,58 +98,60 @@
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
           <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}</a></td>
-          <td>${player.totalPoints}</td>
+          <td>${player.points}</td>
           <td>${player.games}</td>
           <td>${player.winPct}%</td>
         </tr>`;
       });
     }
 
-    // Show player modal with score history
     function showPlayerModal(name) {
-      const scores = history.filter(entry => entry.Name === name)
-        .map(e => ({ competition: e.Competition, score: parseFloat(e.Score) }))
-        .sort((a, b) => ('' + a.competition).localeCompare(b.competition));
+      const scores = history
+        .filter(entry => entry.Name === name)
+        .map(e => ({
+          competition: e.Competition,
+          score: parseFloat(e.Score),
+          points: parseFloat(e.Points),
+          position: parseInt(e.Position)
+        }));
 
       document.getElementById('modalTitle').innerText = `${name}'s Score History`;
 
       const scoreList = document.getElementById('scoreList');
       scoreList.innerHTML = '';
       scores.forEach(s => {
-        scoreList.innerHTML += `<li>Competition ${s.competition}: Score ${s.score}</li>`;
+        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Points ${s.points}, Position ${s.position}</li>`;
       });
 
       const ctx = document.getElementById('scoreChart').getContext('2d');
+      if (window.scoreChart instanceof Chart) window.scoreChart.destroy();
 
-      // Destroy the previous chart if it exists
-      if (window.scoreChart instanceof Chart) {
-        window.scoreChart.destroy(); // Only destroy if it's a valid chart instance
-      }
-
-      // Create a new chart
       window.scoreChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: scores.map(s => s.competition),
           datasets: [
             {
-              label: 'Score',
+              label: 'Net Score',
               data: scores.map(s => s.score),
-              fill: false,
               borderColor: 'blue',
-              tension: 0.1
+              fill: false,
+              tension: 0.2
+            },
+            {
+              label: 'Points',
+              data: scores.map(s => s.points),
+              borderColor: 'green',
+              fill: false,
+              tension: 0.2
             }
           ]
         }
       });
 
-      const playerRank = Object.keys(totalPoints).sort((a, b) => totalPoints[b] - totalPoints[a]).indexOf(name) + 1;
-      document.getElementById('playerRank').innerText = playerRank;
-
       document.getElementById('scoreModal').style.display = 'flex';
     }
 
-    // Close the player modal
     function closeModal() {
       document.getElementById('scoreModal').style.display = 'none';
     }
