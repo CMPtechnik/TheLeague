@@ -64,9 +64,9 @@
       const rounds = [];
 
       newData.forEach(entry => {
-        const { Name, Gross, Net, Round, Position, Winnings } = entry;
-        const gross = parseFloat(Gross);
-        const net = parseFloat(Net);
+        const { Name, Score, Round, Position, Winnings } = entry;
+  const net = parseFloat(Score);
+  const gross = net; // Or: const gross = NaN; if gross is not tracked
         const winningsValue = parseFloat(Winnings);
 
         if (!grossScores[Name]) grossScores[Name] = [];
