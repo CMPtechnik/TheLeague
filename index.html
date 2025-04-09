@@ -103,7 +103,7 @@
 
     function renderTable(data) {
       const table = document.getElementById('league-table');
-      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>';
+      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Score</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>';
       data.forEach((player, i) => {
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
