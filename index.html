@@ -125,7 +125,7 @@
           score: parseFloat(e.Score),
           position: e.Position,
           points: e.Points,
-          winnings: e.Winnings
+          winnings: isNaN(parseFloat(e.Winnings)) ? 0 : parseFloat(e.Winnings)
         }))
         .sort((a, b) => ('' + a.competition).localeCompare(b.competition));
 
