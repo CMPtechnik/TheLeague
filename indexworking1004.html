@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>League Table</title>
-  <link rel="icon" href="favicon.png" type="image/png"/>
+  <link rel="icon" href="favicon.png" type="image/png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: Arial, sans-serif; max-width: 900px; margin: 2rem auto; padding: 1rem; }
-    h1, h4 { text-align: center; }
+    h1 { text-align: center; }
+    h4 { text-align: center; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
     th { background-color: #f4f4f4; }
@@ -22,10 +23,10 @@
 </head>
 <body>
   <div class="logo-container">
-    <img src="logo.png" alt="League Logo" />
+    <img src="logo.png" alt="League Logo">
   </div>
   <h1>Cheadle Golf League Table</h1>
-  <h4><font color="#FF0000"> Last Update - Tue 9 April </font> | Last Competition Single Stableford 5th April</h4>
+  <h4><font color="#FF0000"> Last Update - Wed 9 April </font>| Last Competition Single Stableford 5th April</h4>
   <h4>League Champions Pot <u>£10.20</u></h4>
   <table id="league-table">
     <tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>
@@ -42,7 +43,6 @@
 
   <script>
     let history = [];
-    let leagueData = [];
 
     fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
@@ -76,6 +76,7 @@
         totalWinnings[Name] = (totalWinnings[Name] || 0) + (parseFloat(Winnings) || 0);
       });
 
+      // Calculate wins
       Object.values(rounds).forEach(players => {
         const winners = players.filter(p => p.position === 1);
         winners.forEach(p => {
@@ -83,7 +84,7 @@
         });
       });
 
-      leagueData = Object.keys(netScores).map(name => {
+      const league = Object.keys(netScores).map(name => {
         const netAvg = netScores[name].reduce((a, b) => a + b, 0) / netScores[name].length;
         const games = netScores[name].length;
         const wins = netWins[name] || 0;
@@ -96,14 +97,14 @@
           points: totalPoints[name] || 0,
           winnings: totalWinnings[name] || 0
         };
-      }).sort((a, b) => b.points - a.points);
+      }).sort((a, b) => b.points - a.points); // Sort by total points
 
-      renderTable(leagueData);
+      renderTable(league);
     }
 
     function renderTable(data) {
       const table = document.getElementById('league-table');
-      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Net</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>';
+      table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Avg Score</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th></tr>';
       data.forEach((player, i) => {
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
@@ -136,65 +137,20 @@
         scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Points ${s.points}, Winnings £${parseFloat(s.winnings).toFixed(2)}</li>`;
       });
 
-      const labels = scores.map(s => s.competition);
-      const netData = scores.map(s => s.score);
-      const rankData = labels.map(label => {
-        const snapshot = history.filter(e => e.Competition === label);
-        const players = snapshot.map(e => ({ name: e.Name, score: parseFloat(e.Score) }))
-          .sort((a, b) => a.score - b.score)
-          .map((p, i) => ({ name: p.name, rank: i + 1 }));
-        const playerRank = players.find(p => p.name === name);
-        return playerRank ? playerRank.rank : null;
-      });
-
       const ctx = document.getElementById('scoreChart').getContext('2d');
       if (window.scoreChart instanceof Chart) window.scoreChart.destroy();
 
       window.scoreChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels,
-          datasets: [
-            {
-              label: 'Net Score',
-              data: netData,
-              borderColor: 'blue',
-              fill: false,
-              tension: 0.1
-            },
-            {
-              label: 'Rank (Lower is Better)',
-              data: rankData,
-              borderColor: 'green',
-              fill: false,
-              tension: 0.1,
-              yAxisID: 'yRank'
-            }
-          ]
-        },
-        options: {
-          scales: {
-            y: {
-              type: 'linear',
-              position: 'left',
-              title: {
-                display: true,
-                text: 'Net Score'
-              }
-            },
-            yRank: {
-              type: 'linear',
-              position: 'right',
-              reverse: true,
-              title: {
-                display: true,
-                text: 'Rank'
-              },
-              grid: {
-                drawOnChartArea: false
-              }
-            }
-          }
+          labels: scores.map(s => s.competition),
+          datasets: [{
+            label: 'Net Score',
+            data: scores.map(s => s.score),
+            fill: false,
+            borderColor: 'blue',
+            tension: 0.1
+          }]
         }
       });
 
