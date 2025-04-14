@@ -8,117 +8,50 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 100%;
-      margin: 2rem auto;
-      padding: 1rem;
-      transition: background 0.3s, color 0.3s;
-    }
-    h1, h4 {
+    body { font-family: Arial, sans-serif; margin: 0; padding: 1rem; transition: background 0.3s, color 0.3s; }
+    h1, h4 { text-align: center; font-size: 1.4rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 1rem; }
+    th { background-color: #f4f4f4; }
+    .logo-container { text-align: center; margin-bottom: 0.5rem; }
+    .logo-container img { max-height: 200px; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+    .close-btn { float: right; font-size: 20px; cursor: pointer; }
+
+    .trophy { color: goldenrod; margin-left: 4px; }
+    .tabs { text-align: center; margin-bottom: 1rem; }
+    .tabs button { padding: 8px 16px; margin: 0 5px; border: none; background: #ddd; cursor: pointer; border-radius: 5px; }
+    .tabs button.active { background: #aaa; color: white; }
+
+    #scoreList, #positionList { list-style: none; padding: 0; }
+    #scoreChart { margin-bottom: 1rem; }
+
+    #darkModeToggle {
       text-align: center;
-      font-size: 1.4rem;
+      font-size: 1.5rem;
+      cursor: pointer;
+      margin-bottom: 10px;
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      overflow-x: auto;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-      font-size: 1rem;
-    }
-    th {
-      background-color: #f4f4f4;
-    }
-    .logo-container {
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-    .logo-container img {
-      max-height: 200px;
-    }
+
     .dark-mode {
-      background-color: #121212;
-      color: #ffffff;
+      background: #1e1e1e;
+      color: #e0e0e0;
     }
+
+    .dark-mode table, .dark-mode th, .dark-mode td {
+      border-color: #555;
+    }
+
     .dark-mode th {
       background-color: #333;
     }
-    .dark-mode .modal-content {
-      background-color: #2c2c2c;
-      color: #ffffff;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.6);
-      justify-content: center;
-      align-items: center;
-      z-index: 10;
-    }
-    .modal-content {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      width: 95%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
-      position: relative;
-    }
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 20px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-    .movement {
-      margin-left: 5px;
-      font-size: 1rem;
-    }
-    .up { color: green; }
-    .down { color: red; }
-    .same { color: black; }
 
-    .tab-buttons {
-      text-align: center;
-      margin-top: 1rem;
-    }
-    .tab-buttons button {
-      margin: 0 5px;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-
-    #scoreList, #positionList {
-      padding-left: 1rem;
-    }
-
-    .dark-toggle {
-      text-align: center;
-      margin: 1rem auto;
-    }
-
-    .dark-toggle button {
-      background: none;
-      border: none;
-      font-size: 1.8rem;
-      cursor: pointer;
-    }
-
+    /* Responsive tweaks */
     @media screen and (max-width: 768px) {
-      h1, h4 { font-size: 1.2rem; }
       table { font-size: 0.9rem; display: block; overflow-x: auto; white-space: nowrap; }
-      .modal-content { width: 95%; }
+      .modal-content { width: 95%; padding: 10px; }
     }
   </style>
 </head>
@@ -126,39 +59,33 @@
   <div class="logo-container">
     <img src="logo.png" alt="League Logo" />
   </div>
-
-  <div class="dark-toggle">
-    <button onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</button>
-  </div>
-
+  <div id="darkModeToggle" onclick="toggleDarkMode()">🌙</div>
   <h1>Cheadle Golf League Table</h1>
   <h4><font color="#FF0000"> Last Update - Sat 12 April </font> | Last Competition 1st Monthly Medal</h4>
   <h4>League Champions Pot <u>£22.60</u></h4>
 
-  <div style="overflow-x:auto;">
-    <table id="league-table">
-      <tr><th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th></tr>
-    </table>
-  </div>
+  <table id="league-table">
+    <tr><th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th></tr>
+  </table>
 
   <div class="modal" id="scoreModal">
     <div class="modal-content">
       <span class="close-btn" onclick="closeModal()">&times;</span>
       <h2 id="modalTitle"></h2>
-      <div class="tab-buttons">
-        <button onclick="showTab('net')">Net Scores</button>
-        <button onclick="showTab('positions')">Finishing Positions</button>
+      <div class="tabs">
+        <button id="tabNet" onclick="showTab('net')" class="active">Net Scores</button>
+        <button id="tabPositions" onclick="showTab('positions')">Competition History</button>
       </div>
       <canvas id="scoreChart" height="200"></canvas>
       <ul id="scoreList"></ul>
-      <ul id="positionList" style="display:none;"></ul>
+      <ul id="positionList" style="display: none;"></ul>
     </div>
   </div>
 
   <script>
     let history = [];
     let leagueData = [];
-    let previousPoints = {};
+    let previousPositions = {};
 
     fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
@@ -199,7 +126,7 @@
         });
       });
 
-      const newData = Object.keys(netScores).map(name => {
+      const players = Object.keys(netScores).map(name => {
         const netAvg = netScores[name].reduce((a, b) => a + b, 0) / netScores[name].length;
         const games = netScores[name].length;
         const wins = netWins[name] || 0;
@@ -215,26 +142,35 @@
         };
       });
 
-      // Save previous positions
-      const sortedPrev = leagueData.map(p => p.name);
-      leagueData = newData.sort((a, b) => b.points - a.points);
-      renderTable(leagueData, sortedPrev);
+      players.sort((a, b) => b.points - a.points);
+
+      const currentPositions = {};
+      players.forEach((p, index) => currentPositions[p.name] = index + 1);
+
+      leagueData = players.map(p => {
+        const prev = previousPositions[p.name] || currentPositions[p.name];
+        const movement = currentPositions[p.name] - prev;
+        return { ...p, movement };
+      });
+
+      previousPositions = currentPositions;
+
+      renderTable(leagueData);
     }
 
-    function renderTable(data, previousOrder = []) {
+    function renderTable(data) {
       const table = document.getElementById('league-table');
       table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th></tr>';
       data.forEach((player, i) => {
-        const prevIndex = previousOrder.indexOf(player.name);
-        let movementIcon = `<span class="movement same">↔</span>`;
-        if (prevIndex !== -1) {
-          if (i < prevIndex) movementIcon = `<span class="movement up">↑</span>`;
-          else if (i > prevIndex) movementIcon = `<span class="movement down">↓</span>`;
-        }
+        let arrow = '';
+        if (player.movement < 0) arrow = ' <span style="color:green">↑</span>';
+        else if (player.movement > 0) arrow = ' <span style="color:red">↓</span>';
+        else arrow = ' <span style="color:black">→</span>';
+
         const trophyIcons = '🏆'.repeat(player.trophies);
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
-          <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}</a> ${movementIcon}</td>
+          <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}${arrow}</a></td>
           <td>${player.games}</td>
           <td>${player.winPct}%</td>
           <td>${player.points}</td>
@@ -250,8 +186,8 @@
           competition: e.Competition,
           score: parseFloat(e.Score),
           position: e.Position,
-          points: e.Points,
-          winnings: isNaN(parseFloat(e.Winnings)) ? 0 : parseFloat(e.Winnings)
+          points: parseFloat(e.Points) || 0,
+          winnings: parseFloat(e.Winnings) || 0
         }))
         .sort((a, b) => ('' + a.competition).localeCompare(b.competition));
 
@@ -263,8 +199,9 @@
       positionList.innerHTML = '';
 
       scores.forEach(s => {
-        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}</li>`;
-        positionList.innerHTML += `<li>${s.competition}: Finished ${s.position}</li>`;
+        const trophy = s.position == 1 ? ' 🏆' : '';
+        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}${trophy}</li>`;
+        positionList.innerHTML += `<li>${s.competition}: Finished ${s.position}, Points ${s.points}, Winnings £${s.winnings.toFixed(2)}${trophy}</li>`;
       });
 
       const labels = scores.map(s => s.competition);
@@ -277,36 +214,35 @@
         type: 'line',
         data: {
           labels,
-          datasets: [
-            {
-              label: 'Net Score',
-              data: netData,
-              borderColor: 'blue',
-              backgroundColor: 'lightblue',
-              fill: false,
-              tension: 0.1
-            }
-          ]
+          datasets: [{
+            label: 'Net Score',
+            data: netData,
+            borderColor: 'blue',
+            backgroundColor: 'lightblue',
+            fill: false,
+            tension: 0.1
+          }]
         },
         options: {
           scales: {
             y: {
-              title: {
-                display: true,
-                text: 'Net Score'
-              }
+              title: { display: true, text: 'Net Score' }
             }
           }
         }
       });
 
-      document.getElementById('scoreModal').style.display = 'flex';
       showTab('net');
+      document.getElementById('scoreModal').style.display = 'flex';
     }
 
     function showTab(tab) {
+      document.getElementById('tabNet').classList.remove('active');
+      document.getElementById('tabPositions').classList.remove('active');
       document.getElementById('scoreList').style.display = tab === 'net' ? 'block' : 'none';
       document.getElementById('positionList').style.display = tab === 'positions' ? 'block' : 'none';
+      document.getElementById('scoreChart').style.display = tab === 'net' ? 'block' : 'none';
+      document.getElementById('tab' + (tab === 'net' ? 'Net' : 'Positions')).classList.add('active');
     }
 
     function closeModal() {
@@ -314,7 +250,7 @@
     }
 
     function toggleDarkMode() {
-      document.body.classList.toggle("dark-mode");
+      document.body.classList.toggle('dark-mode');
     }
   </script>
 </body>
