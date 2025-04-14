@@ -10,59 +10,108 @@
   <style>
     body {
       font-family: Arial, sans-serif;
+      max-width: 100%;
       margin: 2rem auto;
       padding: 1rem;
-      max-width: 100%;
       transition: background 0.3s, color 0.3s;
     }
-    h1, h4 { text-align: center; font-size: 1.4rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; overflow-x: auto; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 1rem; }
-    th { background-color: #f4f4f4; }
-    .logo-container { text-align: center; margin-bottom: 1rem; }
-    .logo-container img { max-height: 250px; }
-    .trophy { color: goldenrod; margin-left: 4px; }
-
-    .modal {
-      display: none; position: fixed; top: 0; left: 0; width: 100%;
-      height: 100%; background: rgba(0,0,0,0.6);
-      justify-content: center; align-items: center; z-index: 10;
+    h1, h4 {
+      text-align: center;
+      font-size: 1.4rem;
     }
-    .modal-content {
-      background: white; padding: 20px; border-radius: 10px;
-      width: 95%; max-width: 600px; position: relative;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      overflow-x: auto;
     }
-    .close-btn { position: absolute; right: 15px; top: 10px; font-size: 20px; cursor: pointer; }
-
-    .tab-buttons {
-      display: flex; justify-content: center; margin-bottom: 1rem;
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      font-size: 1rem;
     }
-    .tab-buttons button {
-      padding: 8px 12px; margin: 0 5px;
-      border: 1px solid #ccc; background: #eee;
-      cursor: pointer; border-radius: 5px;
+    th {
+      background-color: #f4f4f4;
     }
-    .tab-buttons button.active { background: #ccc; }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
+    .logo-container {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .logo-container img {
+      max-height: 200px;
+    }
     .dark-mode {
       background-color: #121212;
-      color: white;
+      color: #ffffff;
     }
-    .dark-mode table, .dark-mode th, .dark-mode td {
-      border-color: #444;
-      background-color: #1e1e1e;
+    .dark-mode th {
+      background-color: #333;
     }
-    .dark-mode .modal-content { background: #222; color: white; }
-    .dark-mode .tab-buttons button { background: #333; color: white; border-color: #666; }
-    .dark-mode .tab-buttons button.active { background: #555; }
+    .dark-mode .modal-content {
+      background-color: #2c2c2c;
+      color: #ffffff;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 95%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .movement {
+      margin-left: 5px;
+      font-size: 1rem;
+    }
+    .up { color: green; }
+    .down { color: red; }
+    .same { color: black; }
 
-    .toggle-dark {
-      display: flex; justify-content: center;
-      margin-bottom: 1rem;
-      font-size: 1.5rem;
+    .tab-buttons {
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .tab-buttons button {
+      margin: 0 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    #scoreList, #positionList {
+      padding-left: 1rem;
+    }
+
+    .dark-toggle {
+      text-align: center;
+      margin: 1rem auto;
+    }
+
+    .dark-toggle button {
+      background: none;
+      border: none;
+      font-size: 1.8rem;
       cursor: pointer;
     }
 
@@ -78,7 +127,9 @@
     <img src="logo.png" alt="League Logo" />
   </div>
 
-  <div class="toggle-dark" onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</div>
+  <div class="dark-toggle">
+    <button onclick="toggleDarkMode()" title="Toggle Dark Mode">🌙</button>
+  </div>
 
   <h1>Cheadle Golf League Table</h1>
   <h4><font color="#FF0000"> Last Update - Sat 12 April </font> | Last Competition 1st Monthly Medal</h4>
@@ -94,27 +145,20 @@
     <div class="modal-content">
       <span class="close-btn" onclick="closeModal()">&times;</span>
       <h2 id="modalTitle"></h2>
-
       <div class="tab-buttons">
-        <button class="active" onclick="switchTab('net')">Net Scores</button>
-        <button onclick="switchTab('positions')">Finishing Positions</button>
+        <button onclick="showTab('net')">Net Scores</button>
+        <button onclick="showTab('positions')">Finishing Positions</button>
       </div>
-
-      <div id="tab-net" class="tab-content active">
-        <canvas id="scoreChart" height="200"></canvas>
-        <ul id="scoreList"></ul>
-      </div>
-
-      <div id="tab-positions" class="tab-content">
-        <ul id="positionList"></ul>
-      </div>
+      <canvas id="scoreChart" height="200"></canvas>
+      <ul id="scoreList"></ul>
+      <ul id="positionList" style="display:none;"></ul>
     </div>
   </div>
 
   <script>
     let history = [];
     let leagueData = [];
-    let previousRanks = {};
+    let previousPoints = {};
 
     fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
@@ -127,7 +171,11 @@
       });
 
     function updateLeague(data) {
-      const netScores = {}, netWins = {}, totalPoints = {}, totalWinnings = {}, rounds = {};
+      const netScores = {};
+      const netWins = {};
+      const totalPoints = {};
+      const totalWinnings = {};
+      const rounds = {};
 
       data.forEach(entry => {
         const { Name, Score, Position, Points, Winnings, Competition } = entry;
@@ -151,77 +199,76 @@
         });
       });
 
-      const newLeagueData = Object.keys(netScores).map(name => {
+      const newData = Object.keys(netScores).map(name => {
+        const netAvg = netScores[name].reduce((a, b) => a + b, 0) / netScores[name].length;
         const games = netScores[name].length;
-        const winPct = ((netWins[name] || 0) / games * 100).toFixed(1);
+        const wins = netWins[name] || 0;
+        const winPct = ((wins / games) * 100).toFixed(1);
         return {
           name,
+          netAvg: netAvg.toFixed(2),
           games,
           winPct,
-          points: totalPoints[name],
-          winnings: totalWinnings[name],
-          trophies: netWins[name] || 0
+          points: totalPoints[name] || 0,
+          winnings: totalWinnings[name] || 0,
+          trophies: wins
         };
-      }).sort((a, b) => b.points - a.points);
-
-      const ranked = {};
-      newLeagueData.forEach((player, index) => {
-        ranked[player.name] = index + 1;
       });
 
-      leagueData = newLeagueData.map(player => ({
-        ...player,
-        movement: previousRanks[player.name] ? ranked[player.name] - previousRanks[player.name] : 0
-      }));
-
-      previousRanks = ranked;
-      renderTable(leagueData);
+      // Save previous positions
+      const sortedPrev = leagueData.map(p => p.name);
+      leagueData = newData.sort((a, b) => b.points - a.points);
+      renderTable(leagueData, sortedPrev);
     }
 
-    function renderTable(data) {
+    function renderTable(data, previousOrder = []) {
       const table = document.getElementById('league-table');
       table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th></tr>';
       data.forEach((player, i) => {
-        let movementIcon = '';
-        if (player.movement < 0) movementIcon = ' <span style="color:green">↑</span>';
-        else if (player.movement > 0) movementIcon = ' <span style="color:red">↓</span>';
-        else movementIcon = ' <span style="color:black">→</span>';
-
-        const trophies = '🏆'.repeat(player.trophies);
+        const prevIndex = previousOrder.indexOf(player.name);
+        let movementIcon = `<span class="movement same">↔</span>`;
+        if (prevIndex !== -1) {
+          if (i < prevIndex) movementIcon = `<span class="movement up">↑</span>`;
+          else if (i > prevIndex) movementIcon = `<span class="movement down">↓</span>`;
+        }
+        const trophyIcons = '🏆'.repeat(player.trophies);
         table.innerHTML += `<tr>
           <td>${i + 1}</td>
-          <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}${movementIcon}</a></td>
+          <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}</a> ${movementIcon}</td>
           <td>${player.games}</td>
           <td>${player.winPct}%</td>
           <td>${player.points}</td>
           <td>£${player.winnings.toFixed(2)}</td>
-          <td>${trophies}</td>
+          <td>${trophyIcons}</td>
         </tr>`;
       });
     }
 
     function showPlayerModal(name) {
-      const playerHistory = history.filter(e => e.Name === name)
+      const scores = history.filter(entry => entry.Name === name)
         .map(e => ({
           competition: e.Competition,
           score: parseFloat(e.Score),
           position: e.Position,
-          winnings: parseFloat(e.Winnings) || 0
+          points: e.Points,
+          winnings: isNaN(parseFloat(e.Winnings)) ? 0 : parseFloat(e.Winnings)
         }))
         .sort((a, b) => ('' + a.competition).localeCompare(b.competition));
 
       document.getElementById('modalTitle').innerText = `${name}'s Score History`;
 
       const scoreList = document.getElementById('scoreList');
+      const positionList = document.getElementById('positionList');
       scoreList.innerHTML = '';
-      const labels = [], netData = [];
+      positionList.innerHTML = '';
 
-      playerHistory.forEach(s => {
-        const trophy = s.position == 1 ? '<span class="trophy">🏆</span>' : '';
-        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, £${s.winnings.toFixed(2)} ${trophy}</li>`;
-        labels.push(s.competition);
-        netData.push(s.score);
+      scores.forEach(s => {
+        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}</li>`;
+        positionList.innerHTML += `<li>${s.competition}: Finished ${s.position}</li>`;
       });
+
+      const labels = scores.map(s => s.competition);
+      const netData = scores.map(s => s.score);
 
       const ctx = document.getElementById('scoreChart').getContext('2d');
       if (window.scoreChart instanceof Chart) window.scoreChart.destroy();
@@ -230,35 +277,44 @@
         type: 'line',
         data: {
           labels,
-          datasets: [{ label: 'Net Score', data: netData, borderColor: 'blue', backgroundColor: 'lightblue', fill: false, tension: 0.1 }]
+          datasets: [
+            {
+              label: 'Net Score',
+              data: netData,
+              borderColor: 'blue',
+              backgroundColor: 'lightblue',
+              fill: false,
+              tension: 0.1
+            }
+          ]
         },
         options: {
-          scales: { y: { title: { display: true, text: 'Net Score' } } }
+          scales: {
+            y: {
+              title: {
+                display: true,
+                text: 'Net Score'
+              }
+            }
+          }
         }
       });
 
-      const posList = document.getElementById('positionList');
-      posList.innerHTML = '';
-      playerHistory.forEach(s => {
-        posList.innerHTML += `<li>${s.competition}: Finished Position ${s.position}</li>`;
-      });
-
       document.getElementById('scoreModal').style.display = 'flex';
+      showTab('net');
+    }
+
+    function showTab(tab) {
+      document.getElementById('scoreList').style.display = tab === 'net' ? 'block' : 'none';
+      document.getElementById('positionList').style.display = tab === 'positions' ? 'block' : 'none';
     }
 
     function closeModal() {
       document.getElementById('scoreModal').style.display = 'none';
     }
 
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.tab-buttons button').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('tab-' + tab).classList.add('active');
-      event.target.classList.add('active');
-    }
-
     function toggleDarkMode() {
-      document.body.classList.toggle('dark-mode');
+      document.body.classList.toggle("dark-mode");
     }
   </script>
 </body>
