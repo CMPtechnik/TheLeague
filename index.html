@@ -8,132 +8,68 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root {
-      --bg-color: #ffffff;
-      --text-color: #000000;
-      --header-bg: #f4f4f4;
-      --table-border: #ddd;
-    }
+    body { font-family: Arial, sans-serif; max-width: 100%; margin: 2rem auto; padding: 1rem; transition: background-color 0.3s, color 0.3s; }
+    h1, h4 { text-align: center; font-size: 1.4rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; overflow-x: auto; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 1rem; }
+    th { background-color: #f4f4f4; }
+    .logo-container { text-align: center; margin-bottom: 1rem; }
+    .logo-container img { max-height: 250px; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; }
+    .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 600px; }
+    .close-btn { float: right; font-size: 20px; cursor: pointer; }
+    .trophy { color: goldenrod; margin-left: 8px; }
 
-    body.dark-mode {
-      --bg-color: #121212;
-      --text-color: #ffffff;
-      --header-bg: #1f1f1f;
-      --table-border: #333;
-    }
+    /* Dark Mode styles */
+    body.dark-mode { background-color: #121212; color: white; }
+    table.dark-mode { border: 1px solid #444; }
+    th.dark-mode { background-color: #333; color: white; }
+    td.dark-mode { background-color: #1c1c1c; color: white; }
+    .modal-content.dark-mode { background: #333; color: white; }
 
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      font-family: Arial, sans-serif;
-      max-width: 100%;
-      margin: 2rem auto;
-      padding: 1rem;
-    }
-
-    h1, h4 {
-      text-align: center;
-      font-size: 1.4rem;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      overflow-x: auto;
-    }
-
-    th, td {
-      border: 1px solid var(--table-border);
-      padding: 8px;
-      text-align: center;
-      font-size: 1rem;
-    }
-
-    th {
-      background-color: var(--header-bg);
-    }
-
-    .logo-container {
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-
-    .logo-container img {
-      max-height: 250px;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal-content {
-      background: white;
-      color: black;
-      padding: 20px;
-      border-radius: 10px;
-      width: 90%;
-      max-width: 600px;
-      max-height: 90%;
-      overflow-y: auto;
-    }
-
-    .close-btn {
-      float: right;
-      font-size: 20px;
-      cursor: pointer;
-    }
-
-    .trophy {
-      color: goldenrod;
-      margin-left: 4px;
-    }
-
-    .arrow-up { color: green; margin-left: 4px; }
-    .arrow-down { color: red; margin-left: 4px; }
-    .arrow-same { color: black; margin-left: 4px; }
-
-    .dark-mode-toggle {
-      display: block;
-      margin: 0 auto;
-      text-align: center;
-      padding: 0.5rem 1rem;
-      background: #333;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
+    /* Mobile optimizations */
     @media screen and (max-width: 768px) {
       h1, h4 { font-size: 1.2rem; }
       table { font-size: 0.9rem; }
       .modal-content { width: 90%; }
+    }
+
+    /* Add horizontal scrolling to tables */
+    @media screen and (max-width: 768px) {
       table {
         display: block;
         overflow-x: auto;
         white-space: nowrap;
       }
     }
+
+    /* Movement Arrows */
+    .arrow-up { color: green; margin-left: 4px; }
+    .arrow-down { color: red; margin-left: 4px; }
+    .arrow-same { color: black; margin-left: 4px; }
+
+    /* Dark Mode Toggle Button */
+    .dark-mode-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #333;
+      color: white;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
   </style>
 </head>
 <body>
+  <button class="dark-mode-toggle" onclick="toggleDarkMode()">Toggle Dark Mode</button>
   <div class="logo-container">
     <img src="logo.png" alt="League Logo" />
   </div>
-
-  <button class="dark-mode-toggle" onclick="toggleDarkMode()">Toggle Dark Mode</button>
-
   <h1>Cheadle Golf League Table</h1>
   <h4><font color="#FF0000"> Last Update - Sat 12 April </font> | Last Competition 1st Monthly Medal</h4>
   <h4>League Champions Pot <u>£22.60</u></h4>
-
   <div style="overflow-x:auto;">
     <table id="league-table">
       <tr><th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th></tr>
@@ -152,7 +88,6 @@
   <script>
     let history = [];
     let leagueData = [];
-    let previousRanks = {};
 
     fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
@@ -207,25 +142,29 @@
           winnings: totalWinnings[name] || 0,
           trophies: wins
         };
-      });
+      }).sort((a, b) => b.points - a.points);
 
-      leagueData.sort((a, b) => b.points - a.points);
       renderTable(leagueData);
     }
 
     function renderTable(data) {
       const table = document.getElementById('league-table');
       table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th></tr>';
+
+      // Load previous ranks from localStorage
+      const storedRanks = JSON.parse(localStorage.getItem('previousRanks') || '{}');
       const newRanks = {};
 
       data.forEach((player, i) => {
         const rank = i + 1;
-        const lastRank = previousRanks[player.name];
+        const lastRank = storedRanks[player.name];
         let arrow = '<span class="arrow-same">→</span>';
+
         if (lastRank !== undefined) {
           if (rank < lastRank) arrow = '<span class="arrow-up">↑</span>';
           else if (rank > lastRank) arrow = '<span class="arrow-down">↓</span>';
         }
+
         newRanks[player.name] = rank;
 
         const trophyIcons = player.trophies > 0 ? '🏆'.repeat(player.trophies) : '';
@@ -240,7 +179,8 @@
         </tr>`;
       });
 
-      previousRanks = newRanks;
+      // Save current ranks to localStorage
+      localStorage.setItem('previousRanks', JSON.stringify(newRanks));
     }
 
     function showPlayerModal(name) {
@@ -303,8 +243,15 @@
       document.getElementById('scoreModal').style.display = 'none';
     }
 
+    // Toggle dark mode
     function toggleDarkMode() {
-      document.body.classList.toggle("dark-mode");
+      const body = document.body;
+      const tables = document.querySelectorAll('table');
+      const modalContents = document.querySelectorAll('.modal-content');
+
+      body.classList.toggle('dark-mode');
+      tables.forEach(table => table.classList.toggle('dark-mode'));
+      modalContents.forEach(modal => modal.classList.toggle('dark-mode'));
     }
   </script>
 </body>
