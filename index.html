@@ -48,6 +48,10 @@
       background-color: #333;
     }
 
+    .dark-mode span {
+      color: white !important; /* Ensure arrows are visible in dark mode */
+    }
+
     /* Responsive tweaks */
     @media screen and (max-width: 768px) {
       table { font-size: 0.9rem; display: block; overflow-x: auto; white-space: nowrap; }
@@ -105,7 +109,7 @@
       const rounds = {};
 
       data.forEach(entry => {
-        const { Name, Score, Position, Points, Winnings, Competition } = entry;
+        const { Name, Score, Position, Points, Winnings, Competition, Date } = entry;
         const net = parseFloat(Score);
         if (isNaN(net)) return;
 
@@ -187,9 +191,10 @@
           score: parseFloat(e.Score),
           position: e.Position,
           points: parseFloat(e.Points) || 0,
-          winnings: parseFloat(e.Winnings) || 0
+          winnings: parseFloat(e.Winnings) || 0,
+          date: e.Date
         }))
-        .sort((a, b) => ('' + a.competition).localeCompare(b.competition));
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
 
       document.getElementById('modalTitle').innerText = `${name}'s Score History`;
 
@@ -221,12 +226,21 @@
             backgroundColor: 'lightblue',
             fill: false,
             tension: 0.1
+          }, {
+            label: 'Par 64',
+            data: new Array(labels.length).fill(64),
+            borderColor: 'red',
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.1
           }]
         },
         options: {
           scales: {
             y: {
-              title: { display: true, text: 'Net Score' }
+              title: { display: true, text: 'Net Score' },
+              min: Math.min(...netData) - 2,
+              max: Math.max(...netData) + 2
             }
           }
         }
@@ -253,5 +267,8 @@
       document.body.classList.toggle('dark-mode');
     }
   </script>
+
+  <br>
+  <center>Build V3.1.0 | Monday April 14th - 19:00 </center>
 </body>
 </html>
