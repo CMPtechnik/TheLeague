@@ -7,8 +7,9 @@
   <link rel="icon" href="favicon.png" type="image/png"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; max-width: 100%; margin: 2rem auto; padding: 1rem; transition: background-color 0.3s, color 0.3s; }
+    body { font-family: Arial, sans-serif; max-width: 100%; margin: 2rem auto; padding: 1rem; }
     h1, h4 { text-align: center; font-size: 1.4rem; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; overflow-x: auto; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 1rem; }
@@ -20,12 +21,10 @@
     .close-btn { float: right; font-size: 20px; cursor: pointer; }
     .trophy { color: goldenrod; margin-left: 8px; }
 
-    /* Dark Mode styles */
+    /* Dark Mode Styles */
     body.dark-mode { background-color: #121212; color: white; }
-    table.dark-mode { border: 1px solid #444; }
-    th.dark-mode { background-color: #333; color: white; }
-    td.dark-mode { background-color: #1c1c1c; color: white; }
-    .modal-content.dark-mode { background: #333; color: white; }
+    table.dark-mode th, table.dark-mode td { background-color: #333; color: white; border: 1px solid #444; }
+    .modal-content.dark-mode { background-color: #333; color: white; }
 
     /* Mobile optimizations */
     @media screen and (max-width: 768px) {
@@ -43,29 +42,38 @@
       }
     }
 
-    /* Movement Arrows */
-    .arrow-up { color: green; margin-left: 4px; }
-    .arrow-down { color: red; margin-left: 4px; }
-    .arrow-same { color: black; margin-left: 4px; }
-
-    /* Dark Mode Toggle Button */
+    /* Dark Mode Toggle */
     .dark-mode-toggle {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: #333;
-      color: white;
-      border: none;
-      padding: 10px;
+      font-size: 2rem;
       cursor: pointer;
-      border-radius: 5px;
+      color: white;
+      transition: color 0.3s;
+    }
+    .dark-mode-toggle:hover {
+      color: #ffcc00;
+    }
+
+    /* Movement Arrows */
+    .movement-arrow {
+      font-size: 1.2rem;
+    }
+    .up-arrow {
+      color: green;
+    }
+    .down-arrow {
+      color: red;
+    }
+    .no-move-arrow {
+      color: black;
     }
   </style>
 </head>
 <body>
-  <button class="dark-mode-toggle" onclick="toggleDarkMode()">Toggle Dark Mode</button>
   <div class="logo-container">
     <img src="logo.png" alt="League Logo" />
+  </div>
+  <div style="text-align: center;">
+    <i class="fas fa-moon dark-mode-toggle" onclick="toggleDarkMode()"></i>
   </div>
   <h1>Cheadle Golf League Table</h1>
   <h4><font color="#FF0000"> Last Update - Sat 12 April </font> | Last Competition 1st Monthly Medal</h4>
@@ -88,6 +96,7 @@
   <script>
     let history = [];
     let leagueData = [];
+    let previousRankings = [];
 
     fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
@@ -144,33 +153,31 @@
         };
       }).sort((a, b) => b.points - a.points);
 
+      // Store current rankings to detect movement
+      const currentRankings = leagueData.map((player, index) => player.name);
+      if (previousRankings.length > 0) {
+        leagueData.forEach((player, index) => {
+          const movement = currentRankings.indexOf(player.name) - previousRankings.indexOf(player.name);
+          player.movement = movement > 0 ? 'up' : (movement < 0 ? 'down' : 'same');
+        });
+      }
+
+      previousRankings = currentRankings;
       renderTable(leagueData);
     }
 
     function renderTable(data) {
       const table = document.getElementById('league-table');
       table.innerHTML = '<tr><th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th></tr>';
-
-      // Load previous ranks from localStorage
-      const storedRanks = JSON.parse(localStorage.getItem('previousRanks') || '{}');
-      const newRanks = {};
-
       data.forEach((player, i) => {
-        const rank = i + 1;
-        const lastRank = storedRanks[player.name];
-        let arrow = '<span class="arrow-same">→</span>';
+        const trophyIcons = '🏆'.repeat(player.trophies);
+        const movementIcon = player.movement === 'up' ? '<span class="movement-arrow up-arrow">↑</span>' :
+                              player.movement === 'down' ? '<span class="movement-arrow down-arrow">↓</span>' :
+                              '<span class="movement-arrow no-move-arrow">→</span>';
 
-        if (lastRank !== undefined) {
-          if (rank < lastRank) arrow = '<span class="arrow-up">↑</span>';
-          else if (rank > lastRank) arrow = '<span class="arrow-down">↓</span>';
-        }
-
-        newRanks[player.name] = rank;
-
-        const trophyIcons = player.trophies > 0 ? '🏆'.repeat(player.trophies) : '';
         table.innerHTML += `<tr>
-          <td>${rank}</td>
-          <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name}</a> ${arrow}</td>
+          <td>${i + 1}</td>
+          <td><a href="#" onclick="showPlayerModal('${player.name}')">${player.name} ${movementIcon}</a></td>
           <td>${player.games}</td>
           <td>${player.winPct}%</td>
           <td>${player.points}</td>
@@ -178,9 +185,6 @@
           <td>${trophyIcons}</td>
         </tr>`;
       });
-
-      // Save current ranks to localStorage
-      localStorage.setItem('previousRanks', JSON.stringify(newRanks));
     }
 
     function showPlayerModal(name) {
@@ -243,15 +247,14 @@
       document.getElementById('scoreModal').style.display = 'none';
     }
 
-    // Toggle dark mode
     function toggleDarkMode() {
-      const body = document.body;
-      const tables = document.querySelectorAll('table');
-      const modalContents = document.querySelectorAll('.modal-content');
-
-      body.classList.toggle('dark-mode');
-      tables.forEach(table => table.classList.toggle('dark-mode'));
-      modalContents.forEach(modal => modal.classList.toggle('dark-mode'));
+      document.body.classList.toggle('dark-mode');
+      const modalContent = document.querySelector('.modal-content');
+      if (document.body.classList.contains('dark-mode')) {
+        modalContent.classList.add('dark-mode');
+      } else {
+        modalContent.classList.remove('dark-mode');
+      }
     }
   </script>
 </body>
