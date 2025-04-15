@@ -35,11 +35,32 @@
     }
 
     .dark-mode {
-      --bg: #1e1e1e;
-      --text: #f0f0f0;
-      --accent: #2c3e3a;
-      --border: #555;
-      --hover: #333;
+      --bg: #121212;
+      --text: #f5f5f5;
+      --accent: #1f2b27;
+      --border: #444;
+      --hover: #1e1e1e;
+    }
+
+    .dark-mode table,
+    .dark-mode th,
+    .dark-mode td,
+    .dark-mode .modal-content {
+      background-color: #1e1e1e;
+      color: var(--text);
+    }
+
+    .dark-mode th {
+      background-color: #2a2a2a;
+    }
+
+    .dark-mode .tooltip-bubble {
+      background: #f5f5f5;
+      color: #111;
+    }
+
+    .dark-mode a {
+      color: #80ffd3;
     }
 
     header {
@@ -113,17 +134,29 @@
       font-weight: bold;
     }
 
-    .trophy:hover::after, .trophy.tap-active::after {
-      content: attr(data-tooltip);
+    .trophy {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .tooltip-bubble {
+      display: none;
       position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
       background: #333;
       color: white;
       padding: 5px 8px;
       border-radius: 5px;
       font-size: 0.75rem;
       white-space: nowrap;
-      transform: translateY(-130%);
-      z-index: 999;
+      z-index: 1000;
+    }
+
+    .trophy.show-tooltip .tooltip-bubble {
+      display: block;
     }
 
     .modal {
@@ -206,7 +239,6 @@
     <center>SS = Single Stableford | MM = Monthly Medal</center>
     <center>BC = Board Comp</center>
     <br><center>⬅️➡️ Scroll to view table</center>
-  </div>
   </div>
 
   <main>
@@ -296,7 +328,10 @@
           .map(e => e.Competition);
         const trophyTitle = wonComps.length ? wonComps.join(', ') : '';
         const trophySpan = wonComps.length
-          ? `<span class="trophy" data-tooltip="${trophyTitle}" onclick="this.classList.toggle('tap-active')">${'🏆'.repeat(wonComps.length)}</span>`
+          ? `<span class="trophy" onclick="toggleTooltip(this)">
+               ${'🏆'.repeat(wonComps.length)}
+               <span class="tooltip-bubble">${trophyTitle}</span>
+             </span>`
           : '';
 
         tbody.innerHTML += `
@@ -311,6 +346,19 @@
           </tr>`;
       });
     }
+
+    function toggleTooltip(el) {
+      document.querySelectorAll('.trophy.show-tooltip').forEach(t => {
+        if (t !== el) t.classList.remove('show-tooltip');
+      });
+      el.classList.toggle('show-tooltip');
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.trophy')) {
+        document.querySelectorAll('.trophy.show-tooltip').forEach(t => t.classList.remove('show-tooltip'));
+      }
+    });
 
     function showPlayerModal(name) {
       const scores = history.filter(e => e.Name === name)
@@ -390,10 +438,9 @@
     }
   </script>
 
-    <br>
-    <center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
-    <center>Build V5.5.1 | May 13 - Trophy Tooltips & iOS Support</center>
-    <center>The Apple Geek Data Solutions</center>
-  </body>
+  <br>
+  <center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
+  <center>Build V5.5.4 | Dark Mode Contrast Fix + Mobile Tooltips</center>
+  <center>The Apple Geek Data Solutions</center>
 </body>
 </html>
