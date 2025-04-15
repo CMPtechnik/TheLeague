@@ -62,15 +62,19 @@
       padding: 0 1rem;
     }
 
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 1rem;
       font-size: 0.95rem;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      min-width: 700px;
     }
 
     th, td {
@@ -143,36 +147,6 @@
       --accent: #1f2f2c;
       --border: #444;
     }
-
-    @media screen and (max-width: 768px) {
-      table, thead, tbody, th, td, tr {
-        display: block;
-      }
-
-      th {
-        text-align: left;
-        background-color: var(--accent);
-      }
-
-      td {
-        border: none;
-        border-bottom: 1px solid var(--border);
-        padding: 10px;
-      }
-
-      td:before {
-        content: attr(data-label);
-        font-weight: bold;
-        display: block;
-        margin-bottom: 5px;
-      }
-
-      .tabs {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-    }
   </style>
 </head>
 <body>
@@ -183,16 +157,21 @@
   </header>
   <div class="info-bar">
     <p><span style="color:#c00">Last Update: Sat 12 April</span> | Last Competition: 1st Monthly Medal | Pot: <strong>£22.60</strong></p>
+    <center>SS = Single Stableford | MM = Monthly Medal </center>
+  </br>
+    <center> <-> Scroll to view table </center>
   </div>
   <main>
-    <table id="league-table">
-      <thead>
-        <tr>
-          <th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <div class="table-responsive">
+      <table id="league-table">
+        <thead>
+          <tr>
+            <th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </main>
 
   <div class="modal" id="scoreModal">
@@ -383,6 +362,8 @@
   </script>
   <br>
   <center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
-  <center>The Apple Geek Data Solutions </center>
+  <center>The Apple Geek Data Solutions</center>
+  <br>
+  <center>Build V5.1.0 | Updated Responsive | May 4th</center>
 </body>
 </html>
