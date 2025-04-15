@@ -203,7 +203,8 @@
   <div class="info-bar">
     <h4><font color="#FF0000">Last Update - Sat 11 May</font> | Last Competition: Texas Scramble Barn Dance</h4>
     <h4>League Champions Pot <u>£122.60</u></h4>
-    <center>SS = Single Stableford | MM = Monthly Medal | BC = Board Comp</center>
+    <center>SS = Single Stableford | MM = Monthly Medal</center>
+    <center>BC = Board Comp</center>
     <br><center>⬅️➡️ Scroll to view table</center>
   </div>
   </div>
@@ -238,7 +239,7 @@
   <script>
     let history = [];
 
-    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedatatest.xlsx")
+    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx")
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
