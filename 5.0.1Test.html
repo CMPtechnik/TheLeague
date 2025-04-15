@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cheadle League Table</title>
+  <title>Cheadle Golf League Table</title>
 
-  <!-- Favicon and Apple Touch Icon -->
-  <link rel="icon" href="favicon.png" type="image/png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png" />
-  <link rel="manifest" href="manifest.json" />
+  <!-- Favicon & Apple Icons -->
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="favicon.png" sizes="180x180">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Cheadle Golf League">
   <meta name="theme-color" content="#005c41" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Chart.js & XLSX -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
     :root {
@@ -31,6 +31,15 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .dark-mode {
+      --bg: #1e1e1e;
+      --text: #f0f0f0;
+      --accent: #2c3e3a;
+      --border: #555;
+      --hover: #333;
     }
 
     header {
@@ -38,14 +47,23 @@
       color: white;
       padding: 1rem;
       text-align: center;
+      position: relative;
     }
 
     header img {
-      max-height: 90px;
+      max-height: 80px;
     }
 
     header h1 {
       margin: 0.5rem 0 0;
+    }
+
+    #darkModeToggle {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      cursor: pointer;
+      font-size: 1.5rem;
     }
 
     .info-bar {
@@ -95,32 +113,17 @@
       font-weight: bold;
     }
 
-    .tooltip {
-      cursor: pointer;
-      position: relative;
-    }
-
-    .tooltip-text {
-      visibility: hidden;
-      background-color: #333;
-      color: #fff;
-      text-align: center;
-      padding: 5px 8px;
-      border-radius: 4px;
+    .trophy:hover::after, .trophy.tap-active::after {
+      content: attr(data-tooltip);
       position: absolute;
-      z-index: 10;
-      bottom: 125%; /* Show above */
-      left: 50%;
-      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 0.75rem;
       white-space: nowrap;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    .tooltip:hover .tooltip-text,
-    .tooltip.show-tooltip .tooltip-text {
-      visibility: visible;
-      opacity: 1;
+      transform: translateY(-130%);
+      z-index: 999;
     }
 
     .modal {
@@ -192,15 +195,19 @@
 </head>
 <body>
   <header>
+    <div id="darkModeToggle" onclick="toggleDarkMode()">🌙</div>
     <img src="logo.png" alt="League Logo" />
     <h1>Cheadle Golf League Table</h1>
   </header>
+
   <div class="info-bar">
-    <h4><font color="#FF0000"> Last Update - Sat 11 May </font> | Last Competition: Texas Scramble Barn Dance</h4>
+    <h4><font color="#FF0000">Last Update - Sat 11 May</font> | Last Competition: Texas Scramble Barn Dance</h4>
     <h4>League Champions Pot <u>£122.60</u></h4>
-    <center>SS = Single Stableford | MM = Monthly Medal</center>
+    <center>SS = Single Stableford | MM = Monthly Medal | BC = Board Comp</center>
     <br><center>⬅️➡️ Scroll to view table</center>
   </div>
+  </div>
+
   <main>
     <table id="league-table">
       <thead>
@@ -287,11 +294,9 @@
           .filter(e => e.Name === p.name && parseInt(e.Position) === 1)
           .map(e => e.Competition);
         const trophyTitle = wonComps.length ? wonComps.join(', ') : '';
-        const trophyIcons = wonComps.length
-          ? `<span class="tooltip" onclick="this.classList.toggle('show-tooltip')">
-               ${'🏆'.repeat(wonComps.length)}
-               <span class="tooltip-text">${trophyTitle}</span>
-             </span>` : '';
+        const trophySpan = wonComps.length
+          ? `<span class="trophy" data-tooltip="${trophyTitle}" onclick="this.classList.toggle('tap-active')">${'🏆'.repeat(wonComps.length)}</span>`
+          : '';
 
         tbody.innerHTML += `
           <tr>
@@ -301,7 +306,7 @@
             <td>${p.winPct}%</td>
             <td>${p.points}</td>
             <td>£${p.winnings.toFixed(2)}</td>
-            <td>${trophyIcons}</td>
+            <td>${trophySpan}</td>
           </tr>`;
       });
     }
@@ -378,11 +383,16 @@
     function closeModal() {
       document.getElementById('scoreModal').style.display = 'none';
     }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+    }
   </script>
 
-  <br>
-  <center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
-  <center>Build V5.5.1 | May 13 - Trophy Tooltips & iOS Support</center>
-  <center>The Apple Geek Data Solutions</center>
+    <br>
+    <center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
+    <center>Build V5.5.1 | May 13 - Trophy Tooltips & iOS Support</center>
+    <center>The Apple Geek Data Solutions</center>
+  </body>
 </body>
 </html>
