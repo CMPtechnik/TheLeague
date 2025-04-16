@@ -72,7 +72,7 @@
     }
 
     header img {
-      max-height: 80px;
+      max-height: 150px;
     }
 
     header h1 {
@@ -234,8 +234,9 @@
   </header>
 
   <div class="info-bar">
-    <!-- This heading will be updated dynamically based on the latest competition -->
+    <!-- The first heading will show the dynamic last update and competition -->
     <h4><font color="#FF0000">Loading update...</font></h4>
+    <!-- The second heading will be updated with League Champions Pot info from the XLSX -->
     <h4>League Champions Pot <u>£122.60</u></h4>
     <center>SS = Single Stableford | MM = Monthly Medal</center>
     <center>BC = Board Comp</center>
@@ -246,7 +247,13 @@
     <table id="league-table">
       <thead>
         <tr>
-          <th>Rank</th><th>Name</th><th>Games</th><th>Net Win %</th><th>Total Points</th><th>Total Winnings</th><th>Trophies</th>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Games</th>
+          <th>Net Win %</th>
+          <th>Total Points</th>
+          <th>Total Winnings</th>
+          <th>Trophies</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -272,24 +279,53 @@
   <script>
     let history = [];
 
-    // Fetch the league data from the Excel file
-    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedatatest.xlsx")
+    // Custom function to parse a date string in dd/mm/yyyy format
+    function parseDateStr(dateStr) {
+      if (typeof dateStr === 'string' && dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        // parts[0]: day, parts[1]: month, parts[2]: year
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+      } else {
+        return new Date(dateStr);
+      }
+    }
+
+    // Add a cache-busting parameter to force a fresh request of the Excel file
+    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedatatest.xlsx?v=" + new Date().getTime())
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
+
+        // Check for a dedicated Settings sheet for metadata
+        const settingsSheet = workbook.Sheets['Settings'];
+        if (settingsSheet) {
+          const settingsData = XLSX.utils.sheet_to_json(settingsSheet, { header: 1 });
+          let championsPot;
+          // Look through the rows for a row starting with "League Champions Pot"
+          settingsData.forEach(row => {
+            if (row[0] && row[0].toString().toLowerCase().includes('league champions pot')) {
+              championsPot = row[1];
+            }
+          });
+          if (championsPot) {
+            // Update the second h4 element with the dynamic pot value
+            document.querySelector(".info-bar h4:nth-of-type(2)").innerHTML = `League Champions Pot <u>${championsPot}</u>`;
+          }
+        }
+
+        // Process the main data (assumed to be in the first sheet)
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         history = XLSX.utils.sheet_to_json(sheet);
 
         // Determine the latest competition based on the Date field in the data
         const lastCompetitionEntry = history.reduce((latest, entry) => {
-          return new Date(entry.Date) > new Date(latest.Date) ? entry : latest;
+          return parseDateStr(entry.Date) > parseDateStr(latest.Date) ? entry : latest;
         }, history[0]);
 
         const lastCompetition = lastCompetitionEntry.Competition;
-        // Format the date to a localized string (modify as needed)
-        const lastUpdate = new Date(lastCompetitionEntry.Date).toLocaleDateString();
+        const lastUpdate = parseDateStr(lastCompetitionEntry.Date).toLocaleDateString();
 
-        // Update the info bar text dynamically with the last update and competition
+        // Update the first h4 with the dynamic last update and competition info
         const infoBarHeading = document.querySelector(".info-bar h4");
         infoBarHeading.innerHTML = `<font color="#FF0000">Last Update - ${lastUpdate}</font> | Last Competition: ${lastCompetition}`;
 
@@ -385,7 +421,7 @@
           points: parseFloat(e.Points) || 0,
           winnings: parseFloat(e.Winnings) || 0,
           date: e.Date
-        })).sort((a, b) => new Date(a.date) - new Date(b.date));
+        })).sort((a, b) => parseDateStr(a.date) - parseDateStr(b.date));
 
       document.getElementById('modalTitle').innerText = `${name}'s Score History`;
       const scoreList = document.getElementById('scoreList');
@@ -456,7 +492,7 @@
 
   <br>
   <center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
-  <center>Build V5.5.4 | Dark Mode Contrast Fix + Mobile Tooltips + Last Update </center>
+  <center>Build V5.5.5 | Dark Mode Contrast Fix + Mobile Tooltips</center>
   <center>The Apple Geek Data Solutions</center>
 </body>
 </html>
