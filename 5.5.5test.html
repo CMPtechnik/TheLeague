@@ -272,8 +272,20 @@
   <script>
     let history = [];
 
+    // Custom function to parse a date string in dd/mm/yyyy format
+    function parseDateStr(dateStr) {
+      // Check that the string contains '/'
+      if (typeof dateStr === 'string' && dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        // parts[0]: day, parts[1]: month, parts[2]: year
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+      } else {
+        return new Date(dateStr);
+      }
+    }
+
     // Add a cache-busting parameter to force a fresh request of the Excel file
-    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx?v=" + new Date().getTime())
+    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedatatest.xlsx?v=" + new Date().getTime())
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
@@ -282,12 +294,11 @@
 
         // Determine the latest competition based on the Date field in the data
         const lastCompetitionEntry = history.reduce((latest, entry) => {
-          return new Date(entry.Date) > new Date(latest.Date) ? entry : latest;
+          return parseDateStr(entry.Date) > parseDateStr(latest.Date) ? entry : latest;
         }, history[0]);
 
         const lastCompetition = lastCompetitionEntry.Competition;
-        // Format the date to a localized string (modify as needed)
-        const lastUpdate = new Date(lastCompetitionEntry.Date).toLocaleDateString();
+        const lastUpdate = parseDateStr(lastCompetitionEntry.Date).toLocaleDateString();
 
         // Update the info bar text dynamically with the last update and competition
         const infoBarHeading = document.querySelector(".info-bar h4");
@@ -385,7 +396,7 @@
           points: parseFloat(e.Points) || 0,
           winnings: parseFloat(e.Winnings) || 0,
           date: e.Date
-        })).sort((a, b) => new Date(a.date) - new Date(b.date));
+        })).sort((a, b) => parseDateStr(a.date) - parseDateStr(b.date));
 
       document.getElementById('modalTitle').innerText = `${name}'s Score History`;
       const scoreList = document.getElementById('scoreList');
