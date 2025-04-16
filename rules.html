@@ -10,19 +10,46 @@
   <style>
     :root { --primary: #005c41; --accent: #e6f2ef; --text: #1e1e1e; --bg: #fdfdfd; --border: #ccc; }
     body { margin:0; font-family:'Segoe UI', sans-serif; background:var(--bg); color:var(--text); }
-    header { background:var(--primary); color:#fff; padding:1rem; position:relative; text-align:center; }
-    header a { color:#fff; text-decoration:none; margin:0 0.5rem; font-size:0.9rem; }
+    header {
+      background:var(--primary);
+      color:#fff;
+      padding:1rem;
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+    nav {
+      margin-bottom:0.5rem;
+    }
+    nav a {
+      color:#fff;
+      text-decoration:none;
+      margin:0 0.5rem;
+      font-size:0.9rem;
+    }
+    h1 {
+      margin:0;
+      font-size:1.5rem;
+    }
     main { max-width:800px; margin:2rem auto; padding:0 1rem; }
-    h1 { margin-top:0; }
     section { margin-bottom:2rem; }
     ul { list-style-type: disc; padding-left:1.2rem; }
+
+    @media screen and (max-width: 768px) {
+      header { padding:0.5rem; }
+      nav a { display:block; margin:0.25rem 0; }
+      h1 { margin-top:0.5rem; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <a href="index.html">Home</a> |
-    <a href="logic.html">Logic</a> |
-    Rules
+    <nav>
+      <a href="index.html">Home</a> |
+      <a href="logic.html">Logic</a> |
+      <span style="color:#ccc;">Rules</span>
+    </nav>
     <h1>League Rules</h1>
   </header>
   <main>
@@ -31,23 +58,27 @@
       <p>£30 up front fee to join which covers you for your first 10 competition rounds (£3 entrance fee per round). These can be Saturday, Sunday, or Thursday official club comps, but only singles (Stableford/Medal) comps, not team events.</p>
     </section>
     <section id="payout">
+      <h2>Payout Structure</h2>
       <p>After each comp is completed, scores will be collected, and the top 2 players from those league members who have played split 80% of that week’s pot (60/40), with 20% of it going towards a final league winners’ pot.</p>
     </section>
     <section id="scoring">
+      <h2>Scoring</h2>
       <p>You score points each time you play in a comp depending on where you place with the other league members who have played, and at the end of the year, a league winner takes the final pot and coveted league champion title.</p>
       <p>For example: If 10 league players play the first Saturday comp = £30 in the pot. £24 goes to the top 2 players (60/40 split) and £6 goes into the final pot.</p>
       <ul>
-        <li>1st place scores 10 points (based on 10 players playing), 2nd place scores 9 and so on all the way down to the last player getting 1 point, so you always score points as long as you play.</li>
+        <li>1st place scores 10 points (based on 10 players playing), 2nd place scores 9 and so on down to last player getting 1 point, so you always score points as long as you play.</li>
         <li>If 15 players play, 1st place gets 15 points, etc.</li>
       </ul>
     </section>
     <section id="credit">
-      <p>Money doesn't come off your £30 credit unless you play in a competition. If you don’t use all of your £30 credit up during the season, you get your balance back at the end. If you run out of credit, it can be topped up along the way.</p>
-      <p>Weekly prizes can either be taken as cash transferred back to you each week, or ideally, banked as entry fee credit (if you run out), or cashed in at the end of the season.</p>
-      <p>All money will be kept in a specific league bank account that is not used for anything else.</p>
+      <h2>Credit & Top‑Ups</h2>
+      <p>Money doesn't come off your £30 credit unless you play in a competition. If you don’t use all of your £30 credit during the season, you get your balance back at the end. If you run out of credit, you can top up at any time.</p>
+      <p>Weekly prizes can either be taken as cash transferred back to you each week, banked as entry fee credit, or cashed in at the end of the season.</p>
+      <p>All money is held in a dedicated league bank account that is not used for any other purpose.</p>
     </section>
     <section id="updates">
-      <p>An update on winners and league standings will be sent out each week.</p>
+      <h2>Weekly Updates</h2>
+      <p>An update on winners and league standings will be sent out each week via email.</p>
     </section>
   </main>
 </body>
