@@ -10,18 +10,40 @@
   <style>
     :root { --primary: #005c41; --accent: #e6f2ef; --text: #1e1e1e; --bg: #fdfdfd; --border: #ccc; }
     body { font-family: 'Segoe UI', sans-serif; margin:0; background:var(--bg); color:var(--text); }
-    header { background: var(--primary); color:#fff; padding:1rem; text-align:center; position:relative; }
-    header a { color:#fff; text-decoration:none; position:absolute; left:1rem; top:1rem; font-size:1rem; }
-    main { max-width:800px; margin:2rem auto; padding:0 1rem; }
-    h1 { margin-top:0; }
-    section { margin-bottom:2rem; }
+    header {
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+    }
+    nav {
+      margin-bottom: 0.5rem;
+    }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin: 0 0.5rem;
+      font-size: 0.9rem;
+    }
+    h1 { margin: 0; font-size: 1.5rem; }
+    main { max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+    section { margin-bottom: 2rem; }
     pre { background: #f9f9f9; border:1px solid var(--border); padding:1rem; overflow-x:auto; }
-    ul { margin:0; padding-left:1.2rem; }
+    ul { list-style-type: disc; padding-left: 1.2rem; }
+    @media screen and (max-width: 768px) {
+      header { padding: 0.5rem; }
+      nav a { display: block; margin: 0.25rem 0; }
+      h1 { margin-top: 0.5rem; }
+    }
   </style>
 </head>
 <body>
   <header>
-    <a href="index.html">&larr; Back to Table</a>
+    <nav>
+      <a href="index.html">&larr; Back to Table</a>
+    </nav>
     <h1>Table Ranking Logic</h1>
   </header>
   <main>
@@ -41,18 +63,18 @@
       <h2>Tie‑Breaker Example 1</h2>
       <p>Players with <strong>26 Total Points</strong>:</p>
       <pre>
-Rank  Name                Points  Trophies  Win %  Winnings
-4     Paul Mellor          26      0         0.0%   £16.32
-5     Jay Dempsey          26      0         0.0%   £ 0.00
-6     Simon Peers          26      0         0.0%   £ 0.00
+Rank  Name               Points  Trophies  Win %  Winnings
+4     Paul Mellor         26      0         0.0%   £16.32
+5     Jay Dempsey         26      0         0.0%   £ 0.00
+6     Simon Peers         26      0         0.0%   £ 0.00
       </pre>
-      <p>All three are tied on points, trophies and win %. We compare total winnings next:</p>
+      <p>All three are tied on points, trophies and win %. We compare total winnings next:</p>
       <ul>
-        <li><strong>Paul Mellor</strong> has £16.32 → ranked highest (#4).</li>
-        <li>Jay Dempsey and Simon Peers both have £0.00 → still tied.</li>
+        <li><strong>Paul Mellor</strong> has £16.32 → ranked highest (#4).</li>
+        <li>Jay Dempsey and Simon Peers both have £0.00 → still tied.</li>
         <li>Between those two, we use alphabetical order of full names:</li>
         <ul>
-          <li><strong>Jay Dempsey</strong> ("J") comes before <strong>Simon Peers</strong> ("S").</li>
+          <li><strong>Jay Dempsey</strong> ("J") comes before <strong>Simon Peers</strong> ("S").</li>
         </ul>
       </ul>
     </section>
@@ -61,17 +83,33 @@ Rank  Name                Points  Trophies  Win %  Winn
       <h2>Tie‑Breaker Example 2</h2>
       <p>Players with <strong>20 Total Points</strong>:</p>
       <pre>
-Rank  Name                Points  Trophies  Win %  Winnings
-10    Jim Hall             20      0         0.0%   £ 0.00
-11    Tony Doyle           20      0         0.0%   £ 0.00
+Rank  Name               Points  Trophies  Win %  Winnings
+10    Jim Hall           20      0         0.0%   £ 0.00
+11    Tony Doyle         20      0         0.0%   £ 0.00
       </pre>
-      <p>They’re tied on points, trophies, win %, and winnings. Final tie‑breaker:</p>
+      <p>They’re tied on points, trophies, win %, and winnings. Final tie‑breaker:</p>
       <ul>
-        <li>Compare names alphabetically: <strong>Jim Hall</strong> ("J") comes before <strong>Tony Doyle</strong> ("T").</li>
+        <li>Compare names alphabetically: <strong>Jim Hall</strong> ("J") comes before <strong>Tony Doyle</strong> ("T").</li>
       </ul>
     </section>
 
-    
+    <section>
+      <h2>Implementation Snippet</h2>
+      <p>The JavaScript comparator looks like this:</p>
+      <pre>
+players.sort((a, b) => {
+  if (b.points !== a.points)
+    return b.points - a.points;
+  if (b.trophies !== a.trophies)
+    return b.trophies - a.trophies;
+  if (parseFloat(b.winPct) !== parseFloat(a.winPct))
+    return parseFloat(b.winPct) - parseFloat(a.winPct);
+  if (b.winnings !== a.winnings)
+    return b.winnings - a.winnings;
+  return a.name.localeCompare(b.name);
+});
+      </pre>
+    </section>
   </main>
 </body>
 </html>
