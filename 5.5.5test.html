@@ -291,7 +291,7 @@
     }
 
     // Add a cache-busting parameter to force a fresh request of the Excel file
-    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedatatest.xlsx?v=" + new Date().getTime())
+    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx?v=" + new Date().getTime())
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
