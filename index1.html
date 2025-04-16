@@ -1,9 +1,9 @@
-<!<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cheadle Golf League Table</title>
+  <title>Cheadle Golf League</title>
 
   <!-- Favicon & Apple Icons -->
   <link rel="icon" href="favicon.png" type="image/png">
@@ -85,19 +85,6 @@
       right: 15px;
       cursor: pointer;
       font-size: 1.5rem;
-    }
-
-    /* Link to logic page under dark mode icon */
-    #logicLink {
-      position: absolute;
-      top: 45px;
-      right: 15px;
-      font-size: 0.9rem;
-      color: white;
-      text-decoration: none;
-      background: rgba(0,0,0,0.2);
-      padding: 2px 6px;
-      border-radius: 4px;
     }
 
     .info-bar {
@@ -224,6 +211,7 @@
       margin-bottom: 1rem;
     }
 
+    /* New styling for next competition display */
     #nextCompetition {
       text-align: center;
       padding: 1rem;
@@ -252,13 +240,14 @@
 <body>
   <header>
     <div id="darkModeToggle" onclick="toggleDarkMode()">🌙</div>
-    <a id="logicLink" href="logic.html">View Logic</a>
     <img src="logo.png" alt="League Logo" />
-    <h1>Cheadle Golf League Table</h1>
+    <h1>Cheadle Golf League</h1>
   </header>
 
   <div class="info-bar">
+    <!-- The first heading will show the dynamic last update and competition -->
     <h4><font color="#FF0000">Loading update...</font></h4>
+    <!-- The second heading will be updated with League Champions Pot info from the XLSX -->
     <h4>League Champions Pot <u>£Loading...</u></h4>
     <center>SS = Single Stableford | MM = Monthly Medal</center>
     <center>BC = Board Comp</center>
@@ -282,6 +271,7 @@
     </table>
   </main>
 
+  <!-- New section for displaying the next competition -->
   <div id="nextCompetition">
     Next Competition: <span id="nextCompetitionText">TBD</span>
   </div>
@@ -305,23 +295,29 @@
   <script>
     let history = [];
 
+    // Custom function to parse a date string in dd/mm/yyyy format
     function parseDateStr(dateStr) {
       if (typeof dateStr === 'string' && dateStr.includes('/')) {
         const parts = dateStr.split('/');
+        // parts[0]: day, parts[1]: month, parts[2]: year
         return new Date(parts[2], parts[1] - 1, parts[0]);
       } else {
         return new Date(dateStr);
       }
     }
 
+    // Add a cache-busting parameter to force a fresh request of the Excel file
     fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx?v=" + new Date().getTime())
       .then(res => res.arrayBuffer())
       .then(buffer => {
         const workbook = XLSX.read(buffer, { type: 'array' });
+
+        // Check for a dedicated Settings sheet for metadata
         const settingsSheet = workbook.Sheets['Settings'];
         if (settingsSheet) {
           const settingsData = XLSX.utils.sheet_to_json(settingsSheet, { header: 1 });
           let championsPot, nextCompetition;
+          // Look through the rows for key/value pairs
           settingsData.forEach(row => {
             if (row[0]) {
               const key = row[0].toString().toLowerCase();
@@ -333,25 +329,30 @@
             }
           });
           if (championsPot) {
-            document.querySelector(".info-bar h4:nth-of-type(2)").innerHTML =
-              `League Champions Pot <u>£${championsPot}</u>`;
+            // Update the second h4 element with the dynamic pot value
+            document.querySelector(".info-bar h4:nth-of-type(2)").innerHTML = `League Champions Pot £ ${championsPot}`;
           }
           if (nextCompetition) {
-            document.getElementById('nextCompetitionText').innerText = nextCompetition;
+            // Update the next competition display in the new section
+            document.getElementById('nextCompetitionText').innerHTML = nextCompetition;
           }
         }
 
+        // Process the main data (assumed to be in the first sheet)
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         history = XLSX.utils.sheet_to_json(sheet);
 
-        const lastCompetitionEntry = history.reduce((latest, entry) =>
-          parseDateStr(entry.Date) > parseDateStr(latest.Date) ? entry : latest
-        , history[0]);
+        // Determine the latest competition based on the Date field in the data
+        const lastCompetitionEntry = history.reduce((latest, entry) => {
+          return parseDateStr(entry.Date) > parseDateStr(latest.Date) ? entry : latest;
+        }, history[0]);
 
         const lastCompetition = lastCompetitionEntry.Competition;
         const lastUpdate = parseDateStr(lastCompetitionEntry.Date).toLocaleDateString();
-        document.querySelector(".info-bar h4").innerHTML =
-          `<font color="#FF0000">Last Update - ${lastUpdate}</font> | Last Competition: ${lastCompetition}`;
+
+        // Update the first h4 with the dynamic last update and competition info
+        const infoBarHeading = document.querySelector(".info-bar h4");
+        infoBarHeading.innerHTML = `<font color="#FF0000">Last Update - ${lastUpdate}</font> | Last Competition: ${lastCompetition}`;
 
         updateLeague(history);
       });
@@ -363,33 +364,33 @@
         const { Name, Score, Position, Points, Winnings, Competition } = entry;
         const net = parseFloat(Score);
         if (isNaN(net)) return;
-        netScores[Name] = netScores[Name]||[];
-        rounds[Competition] = rounds[Competition]||[];
+        if (!netScores[Name]) netScores[Name] = [];
+        if (!rounds[Competition]) rounds[Competition] = [];
         netScores[Name].push(net);
         rounds[Competition].push({ name: Name, position: parseInt(Position) });
-        totalPoints[Name] = (totalPoints[Name]||0) + (parseFloat(Points)||0);
-        totalWinnings[Name] = (totalWinnings[Name]||0) + (parseFloat(Winnings)||0);
+        totalPoints[Name] = (totalPoints[Name] || 0) + (parseFloat(Points) || 0);
+        totalWinnings[Name] = (totalWinnings[Name] || 0) + (parseFloat(Winnings) || 0);
       });
 
-      Object.values(rounds).forEach(players =>
-        players.filter(p => p.position===1).forEach(p =>
-          netWins[p.name] = (netWins[p.name]||0) +1
-        )
-      );
+      Object.values(rounds).forEach(players => {
+        players.filter(p => p.position === 1).forEach(p => {
+          netWins[p.name] = (netWins[p.name] || 0) + 1;
+        });
+      });
 
       const players = Object.keys(netScores).map(name => {
         const games = netScores[name].length;
-        const wins = netWins[name]||0;
-        const winPct = ((wins/games)*100).toFixed(1);
-        return { name, games, winPct, points: totalPoints[name], winnings: totalWinnings[name], trophies: wins };
-      }).sort((a,b) => {
-        if (b.points !== a.points) return b.points - a.points;
-        if (b.trophies !== a.trophies) return b.trophies - a.trophies;
-        if (parseFloat(b.winPct) !== parseFloat(a.winPct))
-          return parseFloat(b.winPct) - parseFloat(a.winPct);
-        if (b.winnings !== a.winnings) return b.winnings - a.winnings;
-        return a.name.localeCompare(b.name);
-      });
+        const wins = netWins[name] || 0;
+        const winPct = ((wins / games) * 100).toFixed(1);
+        return {
+          name,
+          games,
+          winPct,
+          points: totalPoints[name],
+          winnings: totalWinnings[name],
+          trophies: wins
+        };
+      }).sort((a, b) => b.points - a.points);
 
       renderTable(players);
     }
@@ -397,101 +398,119 @@
     function renderTable(data) {
       const tbody = document.querySelector("#league-table tbody");
       tbody.innerHTML = '';
-      data.forEach((p,i) => {
-        const won = history.filter(e=>e.Name===p.name&&parseInt(e.Position)===1)
-                           .map(e=>e.Competition);
-        const span = won.length
+
+      data.forEach((p, i) => {
+        const wonComps = history
+          .filter(e => e.Name === p.name && parseInt(e.Position) === 1)
+          .map(e => e.Competition);
+        const trophyTitle = wonComps.length ? wonComps.join(', ') : '';
+        const trophySpan = wonComps.length
           ? `<span class="trophy" onclick="toggleTooltip(this)">
-               ${'🏆'.repeat(won.length)}
-               <span class="tooltip-bubble">${won.join(', ')}</span>
+               ${'🏆'.repeat(wonComps.length)}
+               <span class="tooltip-bubble">${trophyTitle}</span>
              </span>`
           : '';
+
         tbody.innerHTML += `
           <tr>
-            <td>${i+1}</td>
+            <td>${i + 1}</td>
             <td><a href="#" onclick="showPlayerModal('${p.name}')">${p.name}</a></td>
             <td>${p.games}</td>
             <td>${p.winPct}%</td>
             <td>${p.points}</td>
             <td>£${p.winnings.toFixed(2)}</td>
-            <td>${span}</td>
+            <td>${trophySpan}</td>
           </tr>`;
       });
     }
 
-    function toggleTooltip(el){
-      document.querySelectorAll('.trophy.show-tooltip').forEach(t=>{
-        if(t!==el) t.classList.remove('show-tooltip');
+    function toggleTooltip(el) {
+      document.querySelectorAll('.trophy.show-tooltip').forEach(t => {
+        if (t !== el) t.classList.remove('show-tooltip');
       });
       el.classList.toggle('show-tooltip');
     }
-    document.addEventListener('click',e=>{
-      if(!e.target.closest('.trophy'))
-        document.querySelectorAll('.trophy.show-tooltip').forEach(t=>t.classList.remove('show-tooltip'));
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.trophy')) {
+        document.querySelectorAll('.trophy.show-tooltip').forEach(t => t.classList.remove('show-tooltip'));
+      }
     });
 
-    function showPlayerModal(name){
-      const scores = history.filter(e=>e.Name===name)
-        .map(e=>({competition:e.Competition,score:parseFloat(e.Score),
-                 position:e.Position,points:parseFloat(e.Points)||0,
-                 winnings:parseFloat(e.Winnings)||0,date:e.Date}))
-        .sort((a,b)=>parseDateStr(a.date)-parseDateStr(b.date));
+    function showPlayerModal(name) {
+      const scores = history.filter(e => e.Name === name)
+        .map(e => ({
+          competition: e.Competition,
+          score: parseFloat(e.Score),
+          position: e.Position,
+          points: parseFloat(e.Points) || 0,
+          winnings: parseFloat(e.Winnings) || 0,
+          date: e.Date
+        })).sort((a, b) => parseDateStr(a.date) - parseDateStr(b.date));
 
       document.getElementById('modalTitle').innerText = `${name}'s Score History`;
       const scoreList = document.getElementById('scoreList');
-      const posList   = document.getElementById('positionList');
+      const positionList = document.getElementById('positionList');
       scoreList.innerHTML = '';
-      posList.innerHTML = '';
+      positionList.innerHTML = '';
 
-      scores.forEach(s=>{
-        const trophy = s.position==1?' 🏆':'';
-        scoreList.innerHTML   += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}${trophy}</li>`;
-        posList.innerHTML     += `<li>${s.competition}: Finished ${s.position}, Points ${s.points}, Winnings £${s.winnings.toFixed(2)}${trophy}</li>`;
+      scores.forEach(s => {
+        const trophy = s.position == 1 ? ' 🏆' : '';
+        scoreList.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}${trophy}</li>`;
+        positionList.innerHTML += `<li>${s.competition}: Finished ${s.position}, Points ${s.points}, Winnings £${s.winnings.toFixed(2)}${trophy}</li>`;
       });
 
-      const labels = scores.map(s=>s.competition);
-      const netData = scores.map(s=>s.score);
-      const posData = scores.map(s=>s.position);
+      const labels = scores.map(s => s.competition);
+      const netData = scores.map(s => s.score);
+      const positionData = scores.map(s => s.position);
 
       const ctxNet = document.getElementById('scoreChart').getContext('2d');
-      if(window.scoreChart instanceof Chart) window.scoreChart.destroy();
-      window.scoreChart = new Chart(ctxNet,{
-        type:'line',
-        data:{labels,datasets:[
-          {label:'Net Score',data:netData,borderColor:'blue',fill:false},
-          {label:'Par 64',data:new Array(labels.length).fill(64),borderColor:'red',borderDash:[5,5],fill:false}
-        ]},
-        options:{responsive:true}
+      if (window.scoreChart instanceof Chart) window.scoreChart.destroy();
+      window.scoreChart = new Chart(ctxNet, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Net Score', data: netData, borderColor: 'blue', fill: false },
+            { label: 'Par 64', data: new Array(labels.length).fill(64), borderColor: 'red', borderDash: [5, 5], fill: false }
+          ]
+        },
+        options: { responsive: true }
       });
 
-      const ctxPos = document.getElementById('positionChart').getContext('2d');
-      if(window.positionChart instanceof Chart) window.positionChart.destroy();
-      window.positionChart = new Chart(ctxPos,{
-        type:'line',
-        data:{labels,datasets:[
-          {label:'Results',data:posData,borderColor:'green',fill:false}
-        ]},
-        options:{scales:{y:{reverse:true,title:{display:true,text:'Finishing Position'}}}}
+      const ctxPosition = document.getElementById('positionChart').getContext('2d');
+      if (window.positionChart instanceof Chart) window.positionChart.destroy();
+      window.positionChart = new Chart(ctxPosition, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{ label: 'Results', data: positionData, borderColor: 'green', fill: false }]
+        },
+        options: {
+          scales: {
+            y: { reverse: true, title: { display: true, text: 'Finishing Position' } }
+          }
+        }
       });
 
       showTab('net');
-      document.getElementById('scoreModal').style.display='flex';
+      document.getElementById('scoreModal').style.display = 'flex';
     }
 
-    function showTab(tab){
-      ['tabNet','tabPositions','tabHistory'].forEach(id=>document.getElementById(id).classList.remove('active'));
-      document.getElementById('tab'+(tab==='net'?'Net':tab==='positions'?'Positions':'History')).classList.add('active');
-      document.getElementById('scoreList').style.display = tab==='net'?'block':'none';
-      document.getElementById('positionList').style.display = tab==='positions'?'block':'none';
-      document.getElementById('scoreChart').style.display  = tab==='net'?'block':'none';
-      document.getElementById('positionChart').style.display = tab==='history'?'block':'none';
+    function showTab(tab) {
+      ['tabNet', 'tabPositions', 'tabHistory'].forEach(id => document.getElementById(id).classList.remove('active'));
+      document.getElementById('tab' + (tab === 'net' ? 'Net' : (tab === 'positions' ? 'Positions' : 'History'))).classList.add('active');
+      document.getElementById('scoreList').style.display = tab === 'net' ? 'block' : 'none';
+      document.getElementById('positionList').style.display = tab === 'positions' ? 'block' : 'none';
+      document.getElementById('scoreChart').style.display = tab === 'net' ? 'block' : 'none';
+      document.getElementById('positionChart').style.display = tab === 'history' ? 'block' : 'none';
     }
 
-    function closeModal(){
-      document.getElementById('scoreModal').style.display='none';
+    function closeModal() {
+      document.getElementById('scoreModal').style.display = 'none';
     }
 
-    function toggleDarkMode(){
+    function toggleDarkMode() {
       document.body.classList.toggle('dark-mode');
     }
   </script>
@@ -499,8 +518,8 @@
   <br>
   <center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
   <br>
-  <center>Build V5.5.7 | Table Ranking Logic Page</center>
-  <br>
-  <center><a href="https://www.theapplegeek.co.uk" target="_blank">The Apple Geek Data Solutions</a></center>
+  <center>Build v5.5.6 <br>  Dark Mode Contrast Fix | Mobile Tooltips (Trophies) | Next Competition | Dynamic Loading Last Competition Information | Pot Figure</center>
+<br>
+<center> <p> <a href="https://www.theapplegeek.co.uk" target="_blank">The Apple Geek Data Solutions</a></center></p>
 </body>
 </html>
