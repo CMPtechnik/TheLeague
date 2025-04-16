@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cheadle Golf League - Table Logic</title>
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="favicon.png" sizes="180x180">
+  <meta name="theme-color" content="#005c41" />
+  <style>
+    :root { --primary: #005c41; --accent: #e6f2ef; --text: #1e1e1e; --bg: #fdfdfd; --border: #ccc; }
+    body { font-family: 'Segoe UI', sans-serif; margin:0; background:var(--bg); color:var(--text); }
+    header { background: var(--primary); color:#fff; padding:1rem; text-align:center; position:relative; }
+    header a { color:#fff; text-decoration:none; position:absolute; left:1rem; top:1rem; font-size:1rem; }
+    main { max-width:800px; margin:2rem auto; padding:0 1rem; }
+    h1 { margin-top:0; }
+    section { margin-bottom:2rem; }
+    pre { background: #f9f9f9; border:1px solid var(--border); padding:1rem; overflow-x:auto; }
+    ul { margin:0; padding-left:1.2rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="index.html">&larr; Back to Table</a>
+    <h1>Table Ranking Logic</h1>
+  </header>
+  <main>
+    <section>
+      <h2>Overview</h2>
+      <p>The league table is sorted using the following criteria, in order:</p>
+      <ol>
+        <li><strong>Total Points</strong> (descending)</li>
+        <li><strong>Trophies (Wins)</strong> (descending)</li>
+        <li><strong>Net Win Percentage</strong> (descending)</li>
+        <li><strong>Total Winnings</strong> (descending)</li>
+        <li><strong>Alphabetical</strong> (A–Z by player name)</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Tie‑Breaker Example 1</h2>
+      <p>Players with <strong>26 Total Points</strong>:</p>
+      <pre>
+Rank  Name                Points  Trophies  Win %  Winnings
+4     Paul Mellor          26      0         0.0%   £16.32
+5     Jay Dempsey          26      0         0.0%   £ 0.00
+6     Simon Peers          26      0         0.0%   £ 0.00
+      </pre>
+      <p>All three are tied on points, trophies and win %. We compare total winnings next:</p>
+      <ul>
+        <li><strong>Paul Mellor</strong> has £16.32 → ranked highest (#4).</li>
+        <li>Jay Dempsey and Simon Peers both have £0.00 → still tied.</li>
+        <li>Between those two, we use alphabetical order of full names:</li>
+        <ul>
+          <li><strong>Jay Dempsey</strong> ("J") comes before <strong>Simon Peers</strong> ("S").</li>
+        </ul>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Tie‑Breaker Example 2</h2>
+      <p>Players with <strong>20 Total Points</strong>:</p>
+      <pre>
+Rank  Name                Points  Trophies  Win %  Winnings
+10    Jim Hall             20      0         0.0%   £ 0.00
+11    Tony Doyle           20      0         0.0%   £ 0.00
+      </pre>
+      <p>They’re tied on points, trophies, win %, and winnings. Final tie‑breaker:</p>
+      <ul>
+        <li>Compare names alphabetically: <strong>Jim Hall</strong> ("J") comes before <strong>Tony Doyle</strong> ("T").</li>
+      </ul>
+    </section>
+
+    
+  </main>
+</body>
+</html>
