@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cheadle Golf League - Results History</title>
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="favicon.png" sizes="180x180">
+  <meta name="theme-color" content="#005c41" />
+  <style>
+    :root { --primary: #005c41; --accent: #e6f2ef; --text: #1e1e1e; --bg: #fdfdfd; --border: #ccc; }
+    body { margin:0; font-family:'Segoe UI', sans-serif; background:var(--bg); color:var(--text); }
+    header { background:var(--primary); color:#fff; display:flex; flex-direction:column; align-items:center; padding:1rem; }
+    nav { margin-bottom:0.5rem; }
+    nav a { color:#fff; text-decoration:none; margin:0 0.5rem; font-size:0.9rem; }
+    h1 { margin:0; font-size:1.5rem; }
+    main { max-width:1100px; margin:2rem auto; padding:0 1rem; }
+    section { margin-bottom:2rem; }
+    table { width:100%; border-collapse:collapse; margin-top:0.5rem; }
+    th, td { border:1px solid var(--border); padding:8px; text-align:center; }
+    th { background:var(--accent); }
+    @media screen and (max-width:768px) {
+      header { padding:0.5rem; }
+      nav a { display:block; margin:0.25rem 0; }
+      h1 { margin-top:0.5rem; }
+      table { display:block; overflow-x:auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="index.html">Home</a> |
+      <a href="logic.html">Logic</a> |
+      <a href="rules.html">Rules</a> |
+      Results History
+    </nav>
+    <h1>Results History</h1>
+  </header>
+
+  <main id="content">
+    <!-- Sections will be injected here -->
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    function parseDateStr(s) {
+      if (typeof s === 'string' && s.includes('/')) {
+        const [d, m, y] = s.split('/');
+        return new Date(y, m - 1, d);
+      } else {
+        return new Date(s);
+      }
+    }
+
+    fetch('https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx?v=' + Date.now())
+      .then(res => res.arrayBuffer())
+      .then(buffer => {
+        const wb = XLSX.read(buffer, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+
+        // Group rows by competition
+        const groups = {};
+        rows.forEach(r => {
+          const comp = r.Competition || 'Unknown';
+          if (!groups[comp]) groups[comp] = [];
+          groups[comp].push(r);
+        });
+
+        // Build competition list with display title and date
+        const comps = Object.keys(groups).map(comp => {
+          const recs = groups[comp];
+          const title = recs[0].Title || comp;
+          const date = parseDateStr(recs[0].Date);
+          return { title, date, records: recs };
+        });
+
+        // Sort newest first
+        comps.sort((a, b) => b.date - a.date);
+
+        const container = document.getElementById('content');
+        comps.forEach(c => {
+          const isStableford = c.title.toLowerCase().includes('stableford');
+          const sec = document.createElement('section');
+          const h2 = document.createElement('h2');
+          h2.textContent = `${c.title} — ${c.date.toLocaleDateString()}`;
+          sec.appendChild(h2);
+
+          const table = document.createElement('table');
+          const thead = document.createElement('thead');
+
+          // Header row
+          let headerCols = ['<th>Position</th>', '<th>Name</th>'];
+          if (isStableford) headerCols.push('<th>Stableford</th>');
+          else headerCols.push('<th>Net Score</th>');
+          headerCols.push('<th>Points</th>', '<th>Winnings</th>');
+          thead.innerHTML = `<tr>${headerCols.join('')}</tr>`;
+          table.appendChild(thead);
+
+          const tbody = document.createElement('tbody');
+          c.records.sort((a, b) => parseInt(a.Position) - parseInt(b.Position));
+          c.records.forEach(r => {
+            const winVal = isNaN(parseFloat(r.Winnings)) ? 0 : parseFloat(r.Winnings);
+            const sfVal = isNaN(parseInt(r['Stableford Points'])) ? 0 : parseInt(r['Stableford Points']);
+            const tr = document.createElement('tr');
+            let cells = [`<td>${r.Position}</td>`, `<td>${r.Name || ''}</td>`];
+            if (isStableford) cells.push(`<td>${sfVal}</td>`);
+            else cells.push(`<td>${r.Score || ''}</td>`);
+            cells.push(`<td>${r.Points || ''}</td>`, `<td>£${winVal.toFixed(2)}</td>`);
+            tr.innerHTML = cells.join('');
+            tbody.appendChild(tr);
+          });
+
+          table.appendChild(tbody);
+          sec.appendChild(table);
+          container.appendChild(sec);
+        });
+      });
+  </script>
+</body>
+</html>
