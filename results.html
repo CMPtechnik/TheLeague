@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cheadle Golf League - Results History</title>
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="favicon.png" sizes="180x180">
+  <meta name="theme-color" content="#005c41" />
+  <style>
+    :root { --primary: #005c41; --accent: #e6f2ef; --text: #1e1e1e; --bg: #fdfdfd; --border: #ccc; }
+    body { margin:0; font-family:'Segoe UI', sans-serif; background:var(--bg); color:var(--text); }
+    header { background:var(--primary); color:#fff; display:flex; flex-direction:column; align-items:center; padding:1rem; }
+    nav { margin-bottom:0.5rem; }
+    nav a { color:#fff; text-decoration:none; margin:0 0.5rem; font-size:0.9rem; }
+    h1 { margin:0; font-size:1.5rem; }
+    main { max-width:1100px; margin:2rem auto; padding:0 1rem; }
+    section { margin-bottom:2rem; }
+    table { width:100%; border-collapse:collapse; margin-top:0.5rem; }
+    th, td { border:1px solid var(--border); padding:8px; text-align:center; }
+    th { background:var(--accent); }
+    @media screen and (max-width:768px) {
+      header { padding:0.5rem; }
+      nav a { display:block; margin:0.25rem 0; }
+      h1 { margin-top:0.5rem; }
+      table { display:block; overflow-x:auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="index.html">Home</a> |
+      <a href="logic.html">Logic</a> |
+      <a href="rules.html">Rules</a> |
+      Results History
+    </nav>
+    <h1>Results History</h1>
+  </header>
+  <main id="content">
+    <!-- Sections will be injected here -->
+  </main>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    function parseDateStr(s) {
+      if (typeof s === 'string' && s.includes('/')) {
+        var p = s.split('/');
+        return new Date(p[2], p[1] - 1, p[0]);
+      } else {
+        return new Date(s);
+      }
+    }
+
+    fetch('https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx?v=' + Date.now())
+      .then(r => r.arrayBuffer())
+      .then(buf => {
+        var wb = XLSX.read(buf, { type: 'array' });
+        var sheet = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(sheet);
+
+        // Group by competition
+        var groups = {};
+        rows.forEach(r => {
+          var comp = r.Competition || 'Unknown';
+          if (!groups[comp]) groups[comp] = [];
+          groups[comp].push(r);
+        });
+
+        // Build array of competitions with date
+        var comps = Object.keys(groups).map(comp => {
+          var recs = groups[comp];
+          var date = parseDateStr(recs[0].Date);
+          return { title: comp, date: date, records: recs };
+        });
+
+        // Sort descending by date (newest first)
+        comps.sort((a, b) => b.date - a.date);
+
+        var container = document.getElementById('content');
+        comps.forEach(c => {
+          var sec = document.createElement('section');
+          var h2 = document.createElement('h2');
+          h2.textContent = c.title + ' — ' + c.date.toLocaleDateString();
+          sec.appendChild(h2);
+
+          var table = document.createElement('table');
+          var thead = document.createElement('thead');
+          thead.innerHTML = '<tr>' +
+            '<th>Position</th><th>Name</th><th>Net Score</th><th>Points</th><th>Winnings</th>' +
+            '</tr>';
+          table.appendChild(thead);
+
+          var tbody = document.createElement('tbody');
+          // Sort by position ascending
+          c.records.sort((x, y) => parseInt(x.Position) - parseInt(y.Position));
+          c.records.forEach(r => {
+            var winRaw = parseFloat(r.Winnings);
+            var winVal = isNaN(winRaw) ? 0 : winRaw;
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + r.Position + '</td>' +
+              '<td>' + (r.Name || '') + '</td>' +
+              '<td>' + (r.Score || '') + '</td>' +
+              '<td>' + (r.Points || '') + '</td>' +
+              '<td>£' + winVal.toFixed(2) + '</td>';
+            tbody.appendChild(tr);
+          });
+
+          table.appendChild(tbody);
+          sec.appendChild(table);
+          container.appendChild(sec);
+        });
+      });
+  </script>
+</body>
+</html>
