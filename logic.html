@@ -92,22 +92,6 @@ Rank  Name               Points  Trophies  Win %  Winnings
         <li>Compare names alphabetically: <strong>Jim Hall</strong> ("J") comes before <strong>Tony Doyle</strong> ("T").</li>
       </ul>
     </section>
-
-    <section>
-      <h2>Implementation Snippet</h2>
-      <p>The JavaScript comparator looks like this:</p>
-      <pre>
-players.sort((a, b) => {
-  if (b.points !== a.points)
-    return b.points - a.points;
-  if (b.trophies !== a.trophies)
-    return b.trophies - a.trophies;
-  if (parseFloat(b.winPct) !== parseFloat(a.winPct))
-    return parseFloat(b.winPct) - parseFloat(a.winPct);
-  if (b.winnings !== a.winnings)
-    return b.winnings - a.winnings;
-  return a.name.localeCompare(b.name);
-});
       </pre>
     </section>
   </main>
