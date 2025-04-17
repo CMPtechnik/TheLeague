@@ -37,71 +37,78 @@
     </nav>
     <h1>Results History</h1>
   </header>
+
   <main id="content">
     <!-- Sections will be injected here -->
   </main>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
+    // Parse dates in dd/mm/yyyy or standard formats
     function parseDateStr(s) {
       if (typeof s === 'string' && s.includes('/')) {
-        var p = s.split('/');
-        return new Date(p[2], p[1] - 1, p[0]);
+        const [d, m, y] = s.split('/');
+        return new Date(y, m - 1, d);
       } else {
         return new Date(s);
       }
     }
 
     fetch('https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx?v=' + Date.now())
-      .then(r => r.arrayBuffer())
-      .then(buf => {
-        var wb = XLSX.read(buf, { type: 'array' });
-        var sheet = wb.Sheets[wb.SheetNames[0]];
-        var rows = XLSX.utils.sheet_to_json(sheet);
+      .then(res => res.arrayBuffer())
+      .then(buffer => {
+        const wb = XLSX.read(buffer, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet);
 
-        // Group by competition
-        var groups = {};
+        // Group rows by competition key
+        const groups = {};
         rows.forEach(r => {
-          var comp = r.Competition || 'Unknown';
+          const comp = r.Competition || 'Unknown';
           if (!groups[comp]) groups[comp] = [];
           groups[comp].push(r);
         });
 
-        // Build array of competitions with date
-        var comps = Object.keys(groups).map(comp => {
-          var recs = groups[comp];
-          var date = parseDateStr(recs[0].Date);
-          return { title: comp, date: date, records: recs };
+        // Build array of competitions with display title and date
+        const comps = Object.keys(groups).map(comp => {
+          const recs = groups[comp];
+          const title = recs[0].Title || comp;
+          const date = parseDateStr(recs[0].Date);
+          return { title: title, date: date, records: recs };
         });
 
-        // Sort descending by date (newest first)
+        // Sort competitions by date descending (newest first)
         comps.sort((a, b) => b.date - a.date);
 
-        var container = document.getElementById('content');
+        const container = document.getElementById('content');
         comps.forEach(c => {
-          var sec = document.createElement('section');
-          var h2 = document.createElement('h2');
+          // Section and heading
+          const sec = document.createElement('section');
+          const h2 = document.createElement('h2');
           h2.textContent = c.title + ' — ' + c.date.toLocaleDateString();
           sec.appendChild(h2);
 
-          var table = document.createElement('table');
-          var thead = document.createElement('thead');
+          // Results table
+          const table = document.createElement('table');
+          const thead = document.createElement('thead');
           thead.innerHTML = '<tr>' +
             '<th>Position</th><th>Name</th><th>Net Score</th><th>Points</th><th>Winnings</th>' +
             '</tr>';
           table.appendChild(thead);
 
-          var tbody = document.createElement('tbody');
-          // Sort by position ascending
-          c.records.sort((x, y) => parseInt(x.Position) - parseInt(y.Position));
+          const tbody = document.createElement('tbody');
+          // Sort records by Position ascending
+          c.records.sort((a, b) => parseInt(a.Position) - parseInt(b.Position));
           c.records.forEach(r => {
-            var winRaw = parseFloat(r.Winnings);
-            var winVal = isNaN(winRaw) ? 0 : winRaw;
-            var tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + r.Position + '</td>' +
-              '<td>' + (r.Name || '') + '</td>' +
-              '<td>' + (r.Score || '') + '</td>' +
-              '<td>' + (r.Points || '') + '</td>' +
-              '<td>£' + winVal.toFixed(2) + '</td>';
+            const winRaw = parseFloat(r.Winnings);
+            const winVal = isNaN(winRaw) ? 0 : winRaw;
+            const tr = document.createElement('tr');
+            tr.innerHTML =
+              `<td>${r.Position}</td>` +
+              `<td>${r.Name || ''}</td>` +
+              `<td>${r.Score || ''}</td>` +
+              `<td>${r.Points || ''}</td>` +
+              `<td>£${winVal.toFixed(2)}</td>`;
             tbody.appendChild(tr);
           });
 
