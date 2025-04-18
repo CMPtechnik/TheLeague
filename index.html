@@ -319,7 +319,7 @@
       <div class="tabs">
         <button id="tabNet" onclick="showTab('net')" class="active">Net Scores</button>
         <button id="tabPositions" onclick="showTab('positions')">Competition History</button>
-        <button id="tabHistory" onclick="showTab('history')">Results History</button>
+        <button id="tabHistory" onclick="showTab('history')">Results Tracker</button>
       </div>
       <canvas id="scoreChart" height="200"></canvas>
       <canvas id="positionChart" height="200" style="display:none;"></canvas>
@@ -480,15 +480,26 @@
       const posData = scores.map(s=>s.position);
 
       const ctxNet = document.getElementById('scoreChart').getContext('2d');
-      if(window.scoreChart instanceof Chart) window.scoreChart.destroy();
-      window.scoreChart = new Chart(ctxNet,{
-        type:'line',
-        data:{labels,datasets:[
-          {label:'Net Score',data:netData,borderColor:'blue',fill:false},
-          {label:'Par 64',data:new Array(labels.length).fill(64),borderColor:'red',borderDash:[5,5],fill:false}
-        ]},
-        options:{responsive:true}
-      });
+      if (window.scoreChart instanceof Chart) window.scoreChart.destroy();
+    window.scoreChart = new Chart(ctxNet, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Net Score', data: netData, borderColor: 'blue',  fill: false },
+          { label: 'Par 64',    data: new Array(labels.length).fill(64), borderColor: 'red',    borderDash: [5,5], fill: false },
+          { label: 'Par 32',    data: new Array(labels.length).fill(32), borderColor: 'purple',    borderDash: [5,5], fill: false }
+        ]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            title: { display: true, text: 'Net Score' }
+          }
+        }
+      }
+    });
 
       const ctxPos = document.getElementById('positionChart').getContext('2d');
       if(window.positionChart instanceof Chart) window.positionChart.destroy();
