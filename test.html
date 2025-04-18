@@ -124,7 +124,7 @@
       return new Date(dateStr);
     }
 
-    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/leaguedata.xlsx?v=" + Date.now())
+    fetch("https://raw.githubusercontent.com/CMPtechnik/TheLeague/main/data/testleaguedata.xlsx?v=" + Date.now())
       .then(r => r.arrayBuffer())
       .then(buffer => {
         const wb = XLSX.read(buffer, { type:'array' });
