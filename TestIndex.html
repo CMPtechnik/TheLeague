@@ -1,4 +1,4 @@
-<!<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -87,42 +87,17 @@
       font-size: 1.5rem;
     }
 
-    /* Link to logic page under dark mode icon */
-       #logicLink {
-         position: absolute;
-         top: 45px;
-         right: 15px;
-         font-size: 0.9rem;
-         color: white;
-         text-decoration: none;
-         background: rgba(0,0,0,0.2);
-         padding: 2px 6px;
-         border-radius: 4px;
-       }
-       /* Link to rules page under logic link */
-       #rulesLink {
-         position: absolute;
-         top: 75px;
-         right: 15px;
-         font-size: 0.9rem;
-         color: white;
-         text-decoration: none;
-         background: rgba(0,0,0,0.2);
-         padding: 2px 6px;
-         border-radius: 4px;
-       }
-       /* Link to rules page under rules link */
-       #resultsLink {
-         position: absolute;
-         top: 105px;
-         right: 15px;
-         font-size: 0.9rem;
-         color: white;
-         text-decoration: none;
-         background: rgba(0,0,0,0.2);
-         padding: 2px 6px;
-         border-radius: 4px;
-       }
+    /* Links */
+    #logicLink, #rulesLink, #resultsLink {
+      position: absolute;
+      right: 15px;
+      font-size: 0.9rem;
+      color: white;
+      text-decoration: none;
+      background: rgba(0,0,0,0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
 
     .info-bar {
       background: var(--accent);
@@ -317,14 +292,15 @@
       <span class="close-btn" onclick="closeModal()">&times;</span>
       <h2 id="modalTitle"></h2>
       <div class="tabs">
-        <button id="tabNet" onclick="showTab('net')" class="active">Net Scores</button>
-        <button id="tabPositions" onclick="showTab('positions')">Competition History</button>
-        <button id="tabHistory" onclick="showTab('history')">Results History</button>
+        <button id="tab18hStrokeplay" onclick="showTab('18hStrokeplay')" class="active">18 H Strokeplay</button>
+        <button id="tab18hStableford" onclick="showTab('18hStableford')">18 H Stableford</button>
+        <button id="tab9hStableford" onclick="showTab('9hStableford')">9 H Stableford</button>
       </div>
       <canvas id="scoreChart" height="200"></canvas>
       <canvas id="positionChart" height="200" style="display:none;"></canvas>
-      <ul id="scoreList"></ul>
-      <ul id="positionList" style="display:none;"></ul>
+      <ul id="scoreList18hStrokeplay" style="display:none;"></ul>
+      <ul id="scoreList18hStableford" style="display:none;"></ul>
+      <ul id="scoreList9hStableford" style="display:none;"></ul>
     </div>
   </div>
 
@@ -386,33 +362,32 @@
       const netScores = {}, netWins = {}, totalPoints = {}, totalWinnings = {}, rounds = {};
 
       data.forEach(entry => {
-        const { Name, Score, Position, Points, Winnings, Competition } = entry;
+        const { Name, Score, Position, Points, Winnings, Competition, Type } = entry;
         const net = parseFloat(Score);
         if (isNaN(net)) return;
-        netScores[Name] = netScores[Name]||[];
-        rounds[Competition] = rounds[Competition]||[];
+        netScores[Name] = netScores[Name] || [];
+        rounds[Competition] = rounds[Competition] || [];
         netScores[Name].push(net);
         rounds[Competition].push({ name: Name, position: parseInt(Position) });
-        totalPoints[Name] = (totalPoints[Name]||0) + (parseFloat(Points)||0);
-        totalWinnings[Name] = (totalWinnings[Name]||0) + (parseFloat(Winnings)||0);
+        totalPoints[Name] = (totalPoints[Name] || 0) + (parseFloat(Points) || 0);
+        totalWinnings[Name] = (totalWinnings[Name] || 0) + (parseFloat(Winnings) || 0);
       });
 
       Object.values(rounds).forEach(players =>
-        players.filter(p => p.position===1).forEach(p =>
-          netWins[p.name] = (netWins[p.name]||0) +1
+        players.filter(p => p.position === 1).forEach(p =>
+          netWins[p.name] = (netWins[p.name] || 0) + 1
         )
       );
 
       const players = Object.keys(netScores).map(name => {
         const games = netScores[name].length;
-        const wins = netWins[name]||0;
-        const winPct = ((wins/games)*100).toFixed(1);
+        const wins = netWins[name] || 0;
+        const winPct = ((wins / games) * 100).toFixed(1);
         return { name, games, winPct, points: totalPoints[name], winnings: totalWinnings[name], trophies: wins };
-      }).sort((a,b) => {
+      }).sort((a, b) => {
         if (b.points !== a.points) return b.points - a.points;
         if (b.trophies !== a.trophies) return b.trophies - a.trophies;
-        if (parseFloat(b.winPct) !== parseFloat(a.winPct))
-          return parseFloat(b.winPct) - parseFloat(a.winPct);
+        if (parseFloat(b.winPct) !== parseFloat(a.winPct)) return parseFloat(b.winPct) - parseFloat(a.winPct);
         if (b.winnings !== a.winnings) return b.winnings - a.winnings;
         return a.name.localeCompare(b.name);
       });
@@ -423,9 +398,9 @@
     function renderTable(data) {
       const tbody = document.querySelector("#league-table tbody");
       tbody.innerHTML = '';
-      data.forEach((p,i) => {
-        const won = history.filter(e=>e.Name===p.name&&parseInt(e.Position)===1)
-                           .map(e=>e.Competition);
+      data.forEach((p, i) => {
+        const won = history.filter(e => e.Name === p.name && parseInt(e.Position) === 1)
+                           .map(e => e.Competition);
         const span = won.length
           ? `<span class="trophy" onclick="toggleTooltip(this)">
                ${'🏆'.repeat(won.length)}
@@ -434,7 +409,7 @@
           : '';
         tbody.innerHTML += `
           <tr>
-            <td>${i+1}</td>
+            <td>${i + 1}</td>
             <td><a href="#" onclick="showPlayerModal('${p.name}')">${p.name}</a></td>
             <td>${p.games}</td>
             <td>${p.winPct}%</td>
@@ -445,79 +420,74 @@
       });
     }
 
-    function toggleTooltip(el){
-      document.querySelectorAll('.trophy.show-tooltip').forEach(t=>{
-        if(t!==el) t.classList.remove('show-tooltip');
+    function toggleTooltip(el) {
+      document.querySelectorAll('.trophy.show-tooltip').forEach(t => {
+        if (t !== el) t.classList.remove('show-tooltip');
       });
       el.classList.toggle('show-tooltip');
     }
-    document.addEventListener('click',e=>{
-      if(!e.target.closest('.trophy'))
-        document.querySelectorAll('.trophy.show-tooltip').forEach(t=>t.classList.remove('show-tooltip'));
+
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.trophy'))
+        document.querySelectorAll('.trophy.show-tooltip').forEach(t => t.classList.remove('show-tooltip'));
     });
 
-    function showPlayerModal(name){
-      const scores = history.filter(e=>e.Name===name)
-        .map(e=>({competition:e.Competition,score:parseFloat(e.Score),
-                 position:e.Position,points:parseFloat(e.Points)||0,
-                 winnings:parseFloat(e.Winnings)||0,date:e.Date}))
-        .sort((a,b)=>parseDateStr(a.date)-parseDateStr(b.date));
+    function showPlayerModal(name) {
+      const scores = history.filter(e => e.Name === name)
+        .map(e => ({
+          competition: e.Competition,
+          score: parseFloat(e.Score),
+          position: e.Position,
+          points: parseFloat(e.Points) || 0,
+          winnings: parseFloat(e.Winnings) || 0,
+          date: e.Date,
+          type: e.Type
+        }))
+        .sort((a, b) => parseDateStr(a.date) - parseDateStr(b.date));
 
       document.getElementById('modalTitle').innerText = `${name}'s Score History`;
-      const scoreList = document.getElementById('scoreList');
-      const posList   = document.getElementById('positionList');
-      scoreList.innerHTML = '';
-      posList.innerHTML = '';
 
-      scores.forEach(s=>{
-        const trophy = s.position==1?' 🏆':'';
-        scoreList.innerHTML   += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}${trophy}</li>`;
-        posList.innerHTML     += `<li>${s.competition}: Finished ${s.position}, Points ${s.points}, Winnings £${s.winnings.toFixed(2)}${trophy}</li>`;
+      const strokeplay18 = scores.filter(s => s.type === '18 H Strokeplay');
+      const stableford18 = scores.filter(s => s.type === '18 H Stableford');
+      const stableford9 = scores.filter(s => s.type === '9 H Stableford');
+
+      const scoreList18hStrokeplay = document.getElementById('scoreList18hStrokeplay');
+      const scoreList18hStableford = document.getElementById('scoreList18hStableford');
+      const scoreList9hStableford = document.getElementById('scoreList9hStableford');
+
+      scoreList18hStrokeplay.innerHTML = '';
+      scoreList18hStableford.innerHTML = '';
+      scoreList9hStableford.innerHTML = '';
+
+      strokeplay18.forEach(s => {
+        scoreList18hStrokeplay.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}</li>`;
+      });
+      stableford18.forEach(s => {
+        scoreList18hStableford.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}</li>`;
+      });
+      stableford9.forEach(s => {
+        scoreList9hStableford.innerHTML += `<li>${s.competition}: Net ${s.score}, Position ${s.position}, Winnings £${s.winnings.toFixed(2)}</li>`;
       });
 
-      const labels = scores.map(s=>s.competition);
-      const netData = scores.map(s=>s.score);
-      const posData = scores.map(s=>s.position);
+      showTab('18hStrokeplay');
+      document.getElementById('scoreModal').style.display = 'flex';
+    }
 
-      const ctxNet = document.getElementById('scoreChart').getContext('2d');
-      if(window.scoreChart instanceof Chart) window.scoreChart.destroy();
-      window.scoreChart = new Chart(ctxNet,{
-        type:'line',
-        data:{labels,datasets:[
-          {label:'Net Score',data:netData,borderColor:'blue',fill:false},
-          {label:'Par 64',data:new Array(labels.length).fill(64),borderColor:'red',borderDash:[5,5],fill:false}
-        ]},
-        options:{responsive:true}
+    function showTab(tab) {
+      ['tab18hStrokeplay', 'tab18hStableford', 'tab9hStableford'].forEach(id => {
+        document.getElementById(id).classList.remove('active');
+        document.getElementById('scoreList' + id).style.display = 'none';
       });
 
-      const ctxPos = document.getElementById('positionChart').getContext('2d');
-      if(window.positionChart instanceof Chart) window.positionChart.destroy();
-      window.positionChart = new Chart(ctxPos,{
-        type:'line',
-        data:{labels,datasets:[
-          {label:'Results',data:posData,borderColor:'green',fill:false}
-        ]},
-        options:{scales:{y:{reverse:true,title:{display:true,text:'Finishing Position'}}}}
-      });
-
-      showTab('net');
-      document.getElementById('scoreModal').style.display='flex';
+      document.getElementById('tab' + tab).classList.add('active');
+      document.getElementById('scoreList' + tab).style.display = 'block';
     }
 
-    function showTab(tab){
-      ['tabNet','tabPositions','tabHistory'].forEach(id=>document.getElementById(id).classList.remove('active'));
-      document.getElementById('tab'+(tab==='net'?'Net':tab==='positions'?'Positions':'History')).classList.add('active');
-      document.getElementById('scoreList').style.display = tab==='net'?'block':'none';
-      document.getElementById('positionList').style.display = tab==='positions'?'block':'none';
-      document.getElementById('scoreChart').style.display  = tab==='net'?'block':'none';
-      document.getElementById('positionChart').style.display = tab==='history'?'block':'none';
+    function closeModal() {
+      document.getElementById('scoreModal').style.display = 'none'
     }
 
-    function closeModal(){
-      document.getElementById('scoreModal').style.display='none'
-    }
-
-    function toggleDarkMode(){
+    function toggleDarkMode() {
       document.body.classList.toggle('dark-mode');
     }
   </script>
