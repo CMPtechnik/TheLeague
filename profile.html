@@ -16,7 +16,6 @@
     header { background:var(--primary); color:#fff; padding:1rem; text-align:center; }
     header nav a { color:#fff; text-decoration:none; margin:0 0.5rem; font-size:0.9rem; }
     #profileHeader { max-width:800px; margin:2rem auto; text-align:center; }
-    #profileHeader .avatar { width:100px; height:100px; border-radius:50%; object-fit:cover; }
     #profileHeader h1 { margin:0.5rem 0; }
     #profileHeader ul { list-style:none; padding:0; margin:0.5rem 0; display:flex; justify-content:center; gap:1rem; }
     #charts { max-width:800px; margin:2rem auto; display:grid; gap:2rem; }
@@ -53,7 +52,16 @@
     <h2>Competition History</h2>
     <table id="historyTable">
       <thead>
-        <tr><th>Date</th><th>Competition</th><th>Score</th><th>Stableford</th><th>Points</th><th>Winnings</th><th>Trophy</th></tr>
+        <tr>
+          <th>Date</th>
+          <th>Competition</th>
+          <th>Type</th>
+          <th>Score</th>
+          <th>Stableford</th>
+          <th>Points</th>
+          <th>Winnings</th>
+          <th>Trophy</th>
+        </tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -80,9 +88,7 @@
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const history = XLSX.utils.sheet_to_json(sheet);
 
-        // Filter records for player (case-insensitive)
         const recs = history.filter(r => r.Name && r.Name.toLowerCase() === playerName.toLowerCase());
-
         if (!recs.length) {
           document.getElementById('noData').style.display = 'block';
           return;
@@ -91,16 +97,13 @@
         document.getElementById('charts').style.display = '';
         document.getElementById('historySection').style.display = '';
 
-        // Compute stats
         const games = recs.length;
-        const totalPoints = recs.reduce((sum, r) => sum + (parseFloat(r.Points) || 0), 0);
-        const totalWinnings = recs.reduce((sum, r) => sum + (parseFloat(r.Winnings) || 0), 0);
+        const totalPoints = recs.reduce((sum,r) => sum + (parseFloat(r.Points)||0), 0);
+        const totalWinnings = recs.reduce((sum,r) => sum + (parseFloat(r.Winnings)||0), 0);
         const trophies = recs.filter(r => parseInt(r.Position) === 1).length;
-        const winPct = games ? ((trophies / games) * 100).toFixed(1) : 0;
+        const winPct = games ? ((trophies / games)*100).toFixed(1) : 0;
 
-        // Render header without AvatarURL
         document.getElementById('profileHeader').innerHTML = `
-          <img class="avatar" src="default.png" alt="${playerName}" />
           <h1>${playerName}</h1>
           <ul class="stats">
             <li>Games: ${games}</li>
@@ -111,52 +114,46 @@
           </ul>
         `;
 
-        // Prepare chart data
         const dates = recs.map(r => parseDateStr(r.Date).toLocaleDateString());
-        const scores = recs.map(r => parseFloat(r.Score) || 0);
-        const positions = recs.map(r => parseInt(r.Position) || 0);
-        const sfs = recs.map(r => parseInt(r['Stableford Points']) || 0);
+        const scores = recs.map(r => parseFloat(r.Score)||0);
+        const positions = recs.map(r => parseInt(r.Position)||0);
+        const sfs = recs.map(r => parseInt(r['Stableford Points'])||0);
 
-        // Net Score Chart with Par 64 baseline
         const ctxScore = document.getElementById('chartScore').getContext('2d');
         new Chart(ctxScore, {
-          type: 'line',
-          data: {
-            labels: dates,
-            datasets: [
-              { label: 'Net Score', data: scores, fill: false },
-              { label: 'Par 64', data: new Array(dates.length).fill(64), borderDash: [5,5], fill: false }
-            ]
-          },
-          options: { responsive: true }
+          type:'line',
+          data:{ labels:dates, datasets:[
+            { label:'Net Score', data:scores, fill:false },
+            { label:'Par 64', data:new Array(dates.length).fill(64), borderDash:[5,5], fill:false }
+          ]},
+          options:{ responsive:true }
         });
 
-        // Position Chart
         const ctxPos = document.getElementById('chartPosition').getContext('2d');
         new Chart(ctxPos, {
-          type: 'line',
-          data: { labels: dates, datasets: [{ label: 'Position', data: positions, fill: false }] },
-          options: { responsive: true, scales: { y: { reverse: true } } }
+          type:'line',
+          data:{ labels:dates, datasets:[{ label:'Position', data:positions, fill:false }] },
+          options:{ responsive:true, scales:{ y:{ reverse:true } } }
         });
 
-        // Stableford Chart
         const ctxSF = document.getElementById('chartSF').getContext('2d');
         new Chart(ctxSF, {
-          type: 'bar',
-          data: { labels: dates, datasets: [{ label: 'Stableford Points', data: sfs }] },
-          options: { responsive: true }
+          type:'bar',
+          data:{ labels:dates, datasets:[{ label:'Stableford Points', data:sfs }] },
+          options:{ responsive:true }
         });
 
-        // Populate history table
         const tbody = document.querySelector('#historyTable tbody');
         recs.sort((a,b) => parseDateStr(b.Date) - parseDateStr(a.Date)).forEach(r => {
-          const trophy = parseInt(r.Position) === 1 ? '🏆' : '';
-          const win = isNaN(parseFloat(r.Winnings)) ? 0 : parseFloat(r.Winnings);
-          const sf = isNaN(parseInt(r['Stableford Points'])) ? 0 : parseInt(r['Stableford Points']);
+          const trophy = parseInt(r.Position)===1 ? '🏆' : '';
+          const win = isNaN(parseFloat(r.Winnings))?0:parseFloat(r.Winnings);
+          const sf = isNaN(parseInt(r['Stableford Points']))?0:parseInt(r['Stableford Points']);
+          const type = r.Type || '';
           tbody.innerHTML += `
-            <tr>
+            <tr data-type="${type}">
               <td>${parseDateStr(r.Date).toLocaleDateString()}</td>
               <td>${r.Title||r.Competition}</td>
+              <td>${type}</td>
               <td>${r.Score||''}</td>
               <td>${sf}</td>
               <td>${r.Points||''}</td>
@@ -165,8 +162,7 @@
             </tr>
           `;
         });
-      })
-      .catch(err => console.error('Error loading profile data:', err));
+      });
   </script>
 </body>
 </html>

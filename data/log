@@ -100,7 +100,7 @@
 
       <div class="tabs">
         <button id="tabNet" onclick="showTab('net')" class="active">Scores</button>
-        <button id="tabPositions" onclick="showTab('positions')">Competition Entry History</button>
+        <button id="tabPositions" onclick="showTab('positions')">Competition Enrty History</button>
         <button id="tabHistory" onclick="showTab('history')">Results Tracker</button>
       </div>
 
