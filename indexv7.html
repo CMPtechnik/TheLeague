@@ -80,10 +80,12 @@
   </main>
 
   <div id="nextCompetition">
-    Next Competition: <span id="nextCompetitionText">TBD</span>
+    📅 Next Competition: <span id="nextCompetitionText">TBD</span>
   <div id="weather-widget" class="rounded-xl p-4 shadow-md text-center text-sm" style="max-width:600px;margin:1rem auto;background:var(--accent);color:var(--text);"></div>
 
     <div id="weatherDetails" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;">Loading weather...</div>
+  <br>
+    <b>Green Stimp Rating</b> : Somewhere between Slow and Fast - Lots of bobbles and spike drag marks.
   </div>
 
   <div class="modal" id="scoreModal">
@@ -143,7 +145,7 @@
             }
           });
           if (pot) document.querySelector(".info-bar h4:nth-of-type(2)")
-            .innerHTML = `League Champions Pot <u>£${pot}</u>`;
+            .innerHTML = `💰 League Pot <u>£${pot}</u>`;
           if (nextC) document.getElementById('nextCompetitionText').innerText = nextC;
         }
         history = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
