@@ -318,74 +318,82 @@
     function toggleDarkMode(){ document.body.classList.toggle('dark-mode'); }
   </script>
 
-<script>
-  const WEATHER_API_KEY = "e583bd0c194bbfeb3deb92f6bfdad11a";
-  const LOCATION = "Cheadle,UK";
+  <script>
+    const WEATHER_API_KEY = "e583bd0c194bbfeb3deb92f6bfdad11a";
+    const LOCATION = "Cheadle,UK";
 
-  function extractDateFromText(text) {
-    let date = null;
-    const slashMatch = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
-    if (slashMatch) {
-      const [_, day, month, year] = slashMatch;
-      date = new Date(`${year}-${month}-${day}`);
-    } else {
-      const wordMatch = text.match(/\b(\d{1,2})\s(\w+)/);
-      if (wordMatch) {
-        const [_, day, monthName] = wordMatch;
-        const year = new Date().getFullYear();
-        date = new Date(`${day} ${monthName} ${year}`);
-      }
-    }
-    return date;
-  }
-
-  function fetchWeatherForNextComp(nextCompText) {
-    const compDate = extractDateFromText(nextCompText);
-    if (!compDate) return;
-
-    fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${LOCATION}&appid=${WEATHER_API_KEY}&units=metric`)
-      .then(res => res.json())
-      .then(data => {
-        const forecasts = data.list.filter(item => {
-          const forecastDate = new Date(item.dt_txt);
-          return forecastDate.getDate() === compDate.getDate() &&
-                 forecastDate.getMonth() === compDate.getMonth() &&
-                 forecastDate.getFullYear() === compDate.getFullYear();
-        });
-
-        let forecast = forecasts.find(f => f.dt_txt.includes('12:00:00')) ||
-                       forecasts.find(f => f.dt_txt.includes('15:00:00')) ||
-                       forecasts[0];
-
-        const container = document.getElementById("weatherDetails");
-        if (forecast) {
-          const iconUrl = `https://openweathermap.org/img/wn/${forecast.weather[0].icon}@4x.png`;
-          const windSpeedMph = (forecast.wind.speed * 2.23694).toFixed(1);
-          container.innerHTML = `
-            <img src="${iconUrl}" alt="${forecast.weather[0].description}" style="height:60px;filter:drop-shadow(0 0 3px rgba(0,0,0,0.5));">
-            <div>${forecast.weather[0].main} (${forecast.weather[0].description})</div>
-            <div>Temp: ${Math.round(forecast.main.temp)}°C</div>
-            <div>Wind: ${windSpeedMph} mph</div>
-          `;
-        } else {
-          container.innerHTML = "<div>No forecast available yet for this date.</div>";
+    function extractDateFromText(text) {
+      let date = null;
+      const slashMatch = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+      if (slashMatch) {
+        const [_, day, month, year] = slashMatch;
+        date = new Date(`${year}-${month}-${day}`);
+      } else {
+        const wordMatch = text.match(/\b(\d{1,2})\s(\w+)/);
+        if (wordMatch) {
+          const [_, day, monthName] = wordMatch;
+          const year = new Date().getFullYear();
+          date = new Date(`${day} ${monthName} ${year}`);
         }
-      })
-      .catch((err) => {
-        console.error("Weather API error:", err);
-        document.getElementById("weatherDetails").innerHTML = "<div>Unable to load weather.</div>";
-      });
-  }
-
-  const nextCompEl = document.getElementById('nextCompetitionText');
-  const observer = new MutationObserver(() => {
-    if (nextCompEl.innerText !== 'TBD') {
-      fetchWeatherForNextComp(nextCompEl.innerText);
-      observer.disconnect();
+      }
+      return date;
     }
-  });
-  observer.observe(nextCompEl, { childList: true });
-</script>
+
+    function windDirection(degrees) {
+      const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      return dirs[Math.round(degrees / 45) % 8];
+    }
+
+    function fetchWeatherForNextComp(nextCompText) {
+      const compDate = extractDateFromText(nextCompText);
+      if (!compDate) return;
+
+      fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${LOCATION}&appid=${WEATHER_API_KEY}&units=metric`)
+        .then(res => res.json())
+        .then(data => {
+          const forecasts = data.list.filter(item => {
+            const forecastDate = new Date(item.dt_txt);
+            return forecastDate.getDate() === compDate.getDate() &&
+                   forecastDate.getMonth() === compDate.getMonth() &&
+                   forecastDate.getFullYear() === compDate.getFullYear();
+          });
+
+          let forecast = forecasts.find(f => f.dt_txt.includes('12:00:00')) ||
+                         forecasts.find(f => f.dt_txt.includes('15:00:00')) ||
+                         forecasts[0];
+
+          const container = document.getElementById("weatherDetails");
+          if (forecast) {
+            const iconUrl = `https://openweathermap.org/img/wn/${forecast.weather[0].icon}@4x.png`;
+            const windSpeedMph = (forecast.wind.speed * 2.23694).toFixed(1);
+            const windDir = windDirection(forecast.wind.deg);
+            const arrowStyle = `transform: rotate(${forecast.wind.deg}deg); display:inline-block; transition:transform 0.3s`; // rotate arrow
+
+            container.innerHTML = `
+              <img src="${iconUrl}" alt="${forecast.weather[0].description}" style="height:60px;filter:drop-shadow(0 0 3px rgba(0,0,0,0.5));">
+              <div>${forecast.weather[0].main} (${forecast.weather[0].description})</div>
+              <div>Temp: ${Math.round(forecast.main.temp)}°C</div>
+              <div>Wind: ${windSpeedMph} mph (${windDir}) <span style="${arrowStyle}">⬆️</span></div>
+            `;
+          } else {
+            container.innerHTML = "<div>No forecast available yet for this date.</div>";
+          }
+        })
+        .catch((err) => {
+          console.error("Weather API error:", err);
+          document.getElementById("weatherDetails").innerHTML = "<div>Unable to load weather.</div>";
+        });
+    }
+
+    const nextCompEl = document.getElementById('nextCompetitionText');
+    const observer = new MutationObserver(() => {
+      if (nextCompEl.innerText !== 'TBD') {
+        fetchWeatherForNextComp(nextCompEl.innerText);
+        observer.disconnect();
+      }
+    });
+    observer.observe(nextCompEl, { childList: true });
+  </script>
 
   <br><center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
   <br><center>Build v7.0.1 | Weather Widget Added for Next Comp</center>
