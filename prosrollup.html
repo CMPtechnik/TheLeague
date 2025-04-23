@@ -17,7 +17,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
-    :root { --primary:#73565d;--accent:#92cde0;--text:#1e1e1e;--bg:#fdfdfd;--border:#ccc;--hover:#f1f1f1; }
+    :root { --primary:#000000;--accent:#92cde0;--text:#1e1e1e;--bg:#fdfdfd;--border:#ccc;--hover:#f1f1f1; }
     body { font-family:'Segoe UI',sans-serif;margin:0;background:var(--bg);color:var(--text);transition:background .3s,color .3s; }
     .dark-mode { --bg:#121212;--text:#f5f5f5;--accent:#1f2b27;--border:#444;--hover:#1e1e1e; }
     .dark-mode table,.dark-mode th,.dark-mode td,.dark-mode .modal-content { background:#1e1e1e;color:var(--text); }
@@ -57,7 +57,7 @@
     <div id="darkModeToggle" onclick="toggleDarkMode()">🌙</div>
     <a id="logicLink" href="index.html">Home</a>
     <a id="resultsLink" href="prosresults.html">Pros Results</a>
-    <img src="CGC.png" alt="League Logo" />
+    <img src="tomlogo.png" alt="League Logo" />
     <h1>Pros Roll Up 2025</h1>
   </header>
 
@@ -94,10 +94,7 @@
       <div class="modal-filter">
         <label for="modalTypeFilter">Show:</label>
         <select id="modalTypeFilter">
-          <option value="All">All Types</option>
-          <option value="18H Stableford">Stableford</option>
           <option value="9H Stableford">Pros Roll Up</option>
-          <option value="18H Strokeplay">Strokeplay (Medals)</option>
         </select>
       </div>
 
@@ -156,77 +153,77 @@
       });
 
       function updateLeague(data) {
-         // NEW: track every round, even non-numeric scores
-         const gamesPlayed = {};
+    const gamesPlayed = {};
+    const totalPts = {};  // This should be Total Points
+    const totalWin = {};
+    const rounds = {};
+    const netWins = {};
+    const totalWinnings = {};  // Store winnings
 
-         const netScores  = {},
-               netWins    = {},
-               totalPts   = {},
-               totalWin   = {},
-               rounds     = {};
+    data.forEach(e => {
+      // Count this row as a game, regardless of whether Stableford Points are numeric
+      gamesPlayed[e.Name] = (gamesPlayed[e.Name] || 0) + 1;
 
-         data.forEach(e => {
-           // count this row as a game, regardless of whether Score is numeric
-           gamesPlayed[e.Name] = (gamesPlayed[e.Name] || 0) + 1;
+      // Make sure we are using the correct Total Points, not just Stableford Points
+      const points = parseFloat(e.Points);  // Total Points column
+      if (isNaN(points)) return;  // Skip non-numeric points
 
-           const n = parseFloat(e.Score);
-           if (isNaN(n)) return;           // skip non-numeric scores
+      // Store Total Points
+      totalPts[e.Name] = (totalPts[e.Name] || 0) + points;
 
-           netScores[e.Name] = netScores[e.Name] || [];
-           netScores[e.Name].push(n);
+      rounds[e.Competition] = rounds[e.Competition] || [];
+      rounds[e.Competition].push({ name: e.Name, position: +e.Position });
 
-           rounds[e.Competition] = rounds[e.Competition] || [];
-           rounds[e.Competition].push({ name: e.Name, position: +e.Position });
+      // Count wins per player
+      if (e.Position === 1) {
+        netWins[e.Name] = (netWins[e.Name] || 0) + 1;
+      }
 
-           totalPts[e.Name] = (totalPts[e.Name] || 0) + (parseFloat(e.Points)   || 0);
-           totalWin[e.Name] = (totalWin[e.Name] || 0) + (parseFloat(e.Winnings) || 0);
-         });
+      // Add winnings data for each player
+      const winnings = parseFloat(e.Winnings);
+      totalWinnings[e.Name] = (totalWinnings[e.Name] || 0) + (isNaN(winnings) ? 0 : winnings);
+    });
 
-         // count wins per player
-         Object.values(rounds).forEach(r => {
-           r.filter(p => p.position === 1)
-            .forEach(p => netWins[p.name] = (netWins[p.name] || 0) + 1);
-         });
+    const players = Object.keys(gamesPlayed).map(name => {
+      const g = gamesPlayed[name] || 0;
+      const w = netWins[name] || 0;
+      return {
+        name,
+        games: g,
+        winPct: g ? ((w / g) * 100).toFixed(1) : "0.0",
+        points: totalPts[name] || 0,  // Using Total Points here
+        trophies: w,
+        winnings: totalWinnings[name] || 0   // Include winnings in the player data
+      };
+    }).sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;  // Sort by Total Points
+      if (b.trophies !== a.trophies) return b.trophies - a.trophies;  // Sort by trophies
+      if (+b.winPct !== +a.winPct) return +b.winPct - +a.winPct;  // Sort by win percentage
+      return a.name.localeCompare(b.name);  // Sort alphabetically by name if all else is equal
+    });
 
-         const players = Object.keys(gamesPlayed).map(name => {
-           const g = gamesPlayed[name] || 0;
-           const w = netWins[name]      || 0;
-           return {
-             name,
-             games:    g,
-             winPct:   g ? ((w / g) * 100).toFixed(1) : "0.0",
-             points:   totalPts[name]   || 0,
-             winnings: totalWin[name]   || 0,
-             trophies: w
-           };
-         }).sort((a,b) => {
-           if (b.points   !== a.points)    return b.points   - a.points;
-           if (b.trophies !== a.trophies)  return b.trophies - a.trophies;
-           if (+b.winPct  !== +a.winPct)   return +b.winPct  - +a.winPct;
-           if (b.winnings !== a.winnings)  return b.winnings - a.winnings;
-           return a.name.localeCompare(b.name);
-         });
+    const tbody = document.querySelector("#league-table tbody");
+    tbody.innerHTML = '';
+    players.forEach((p, i) => {
+      const won = Object.entries(rounds)
+        .filter(([, arr]) => arr.some(x => x.name === p.name && x.position === 1))
+        .map(([comp]) => comp);
+      const trophySpan = won.length
+        ? `<span class="trophy" onclick="toggleTooltip(this)">${'🏆'.repeat(won.length)}<span class="tooltip-bubble">${won.join(', ')}</span></span>`
+        : '';
+      tbody.innerHTML += `<tr>
+        <td>${i + 1}</td>                <!-- Rank -->
+        <td><a href="#" onclick="event.preventDefault(); showPlayerModal('${p.name}')">${p.name}</a></td>   <!-- Name -->
+        <td>${p.games}</td>             <!-- Games Played -->
+        <td>${p.winPct}%</td>           <!-- Win Percentage -->
+        <td>${p.points}</td>            <!-- Total Points -->
+        <td>£${p.winnings.toFixed(2)}</td>  <!-- Total Winnings -->
+        <td>${trophySpan}</td>          <!-- Trophies -->
+      </tr>`;
+    });
+  }
 
-         const tbody = document.querySelector("#league-table tbody");
-         tbody.innerHTML = '';
-         players.forEach((p,i) => {
-           const won = Object.entries(rounds)
-             .filter(([, arr]) => arr.some(x => x.name === p.name && x.position === 1))
-             .map(([comp]) => comp);
-           const trophySpan = won.length
-             ? `<span class=\"trophy\" onclick=\"toggleTooltip(this)\">${'🏆'.repeat(won.length)}<span class=\"tooltip-bubble\">${won.join(', ')}</span></span>`
-             : '';
-           tbody.innerHTML += `<tr>
-               <td>${i+1}</td>
-               <td><a href="#" onclick="event.preventDefault(); showPlayerModal('${p.name}')">${p.name}</a></td>
-               <td>${p.games}</td>
-               <td>${p.winPct}%</td>
-               <td>${p.points}</td>
-               <td>£${p.winnings.toFixed(2)}</td>
-               <td>${trophySpan}</td>
-             </tr>`;
-         });
-       }
+
 
     function toggleTooltip(el){ document.querySelectorAll('.trophy.show-tooltip').forEach(t=> t!==el && t.classList.remove('show-tooltip')); el.classList.toggle('show-tooltip'); }
     document.addEventListener('click', e=>{ if (!e.target.closest('.trophy')) document.querySelectorAll('.trophy.show-tooltip').forEach(t=>t.classList.remove('show-tooltip')); });
@@ -262,9 +259,9 @@
         if (isStable) {
           datasets.push({ label: primaryLabel, data: primaryData, borderColor:'blue', fill:false });
         } else {
-          datasets.push({ label:'Net Score', data: primaryData, borderColor:'blue', fill:false });
+        //  datasets.push({ label:'Net Score', data: primaryData, borderColor:'blue', fill:false });
           // datasets.push({ label:'Par 64',    data:new Array(labels.length).fill(64), borderColor:'red', borderDash:[5,5], fill:false });
-          datasets.push({ label:'Par 32',    data:new Array(labels.length).fill(32), borderColor:'purple', borderDash:[5,5], fill:false });
+        // datasets.push({ label:'Par 32',    data:new Array(labels.length).fill(32), borderColor:'purple', borderDash:[5,5], fill:false });
         }
 
         // Chart
@@ -280,7 +277,7 @@
         if (positionChart) positionChart.destroy();
         positionChart = new Chart(ctxPos, {
           type:'line',
-          data:{ labels, datasets:[{ label:'Position', data:data.map(s=>s.position), borderColor:'green', fill:false }] },
+          data:{ labels, datasets:[{ label:'Competition Finishing Place', data:data.map(s=>s.position), borderColor:'green', fill:false }] },
           options:{ scales:{ y:{ reverse:true, title:{ display:true, text:'Finishing Position' } } } }
         });
       }
@@ -393,7 +390,7 @@
   </script>
 
   <br><center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
-  <br><center>Build v7.0.1 | Weather Widget Added for Next Comp</center>
+  <br><center>Build v1.0.0 Week 1 Launched</center>
   <br><center><a href="https://www.theapplegeek.co.uk" target="_blank">The Apple Geek Data Solutions</a></center>
 </body>
 </html>
