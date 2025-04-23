@@ -80,12 +80,21 @@
   </main>
 
   <div id="nextCompetition">
-    📅 Next Competition: <span id="nextCompetitionText">TBD</span>
+    Next Competition: <span id="nextCompetitionText">TBD</span>
   <div id="weather-widget" class="rounded-xl p-4 shadow-md text-center text-sm" style="max-width:600px;margin:1rem auto;background:var(--accent);color:var(--text);"></div>
 
     <div id="weatherDetails" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;">Loading weather...</div>
-  <br>
-    <b>Green Stimp Rating</b> : Somewhere between Slow and Fast - Lots of bobbles and spike drag marks.
+  </div>
+
+  <div id="admin-panel" style="max-width:1100px;margin:2rem auto;text-align:center;">
+    <button id="adminLoginBtn" onclick="toggleAdminLogin()">🔒 Admin Login</button>
+    <div id="adminControls" style="display:none;margin-top:1rem;">
+      <button onclick="downloadLeagueData()">📥 Download Current Data</button>
+      <input type="file" id="adminUpload" accept=".xlsx,.csv" style="margin-left:1rem;" disabled onchange="handleFileUpload(event)" />
+      <br>
+      <br>
+      <b>Neil</b> - **Upload only edits <u>cached</u> view to sense check data - still needs sending to Craig to push Live.**
+    </div>
   </div>
 
   <div class="modal" id="scoreModal">
@@ -145,7 +154,7 @@
             }
           });
           if (pot) document.querySelector(".info-bar h4:nth-of-type(2)")
-            .innerHTML = `💰 League Pot <u>£${pot}</u>`;
+            .innerHTML = `League Champions Pot <u>£${pot}</u>`;
           if (nextC) document.getElementById('nextCompetitionText').innerText = nextC;
         }
         history = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
@@ -385,6 +394,85 @@
   });
   observer.observe(nextCompEl, { childList: true });
 </script>
+<script>
+  let isAdmin = false;
+  let hasDownloaded = false;
+
+  function toggleAdminLogin() {
+    const pw = prompt("Enter admin password:");
+    if (pw === "letmein2025golfleague") {
+      isAdmin = true;
+      document.getElementById("adminControls").style.display = "block";
+    } else {
+      alert("Incorrect password.");
+    }
+  }
+
+  function downloadLeagueData() {
+    if (!history || !history.length) return alert("No league data to download.");
+    const wb = XLSX.utils.book_new();
+    const wsData = XLSX.utils.json_to_sheet(history);
+    XLSX.utils.book_append_sheet(wb, wsData, "LeagueData");
+
+    // Extract current pot/nextComp text
+    const potText = document.querySelector(".info-bar h4:nth-of-type(2)").innerText;
+    const nextComp = document.getElementById("nextCompetitionText").innerText;
+    const settings = [
+      ["League Champions Pot", potText.replace(/[^\d.]/g, '')],
+      ["Next Competition", nextComp]
+    ];
+    const wsSettings = XLSX.utils.aoa_to_sheet(settings);
+    XLSX.utils.book_append_sheet(wb, wsSettings, "Settings");
+
+    XLSX.writeFile(wb, `league-data-${new Date().toISOString().slice(0,10)}.xlsx`);
+    hasDownloaded = true;
+    document.getElementById("adminUpload").disabled = false;
+  }
+
+  function handleFileUpload(event) {
+    if (!hasDownloaded) {
+      alert("You must download current data before uploading changes.");
+      return;
+    }
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+
+      const sheetNames = wb.SheetNames;
+      const compSheet = wb.Sheets[sheetNames[0]];
+      const settingsSheet = wb.Sheets["Settings"];
+
+      if (!compSheet) return alert("Competition sheet is missing.");
+      const newData = XLSX.utils.sheet_to_json(compSheet);
+      if (Array.isArray(newData) && newData.length > 0) {
+        history = newData;
+        updateLeague(history);
+      } else {
+        alert("Uploaded league data is empty or invalid.");
+      }
+
+      if (settingsSheet) {
+        const settingsRows = XLSX.utils.sheet_to_json(settingsSheet, { header: 1 });
+        let pot = null, nextComp = null;
+        settingsRows.forEach(([key, value]) => {
+          if (!key || typeof value === 'undefined') return;
+          const lower = key.toString().toLowerCase();
+          if (lower.includes("pot")) pot = value;
+          if (lower.includes("next competition")) nextComp = value;
+        });
+        if (pot) document.querySelector(".info-bar h4:nth-of-type(2)").innerHTML = `League Champions Pot <u>£${pot}</u>`;
+        if (nextComp) document.getElementById("nextCompetitionText").innerText = nextComp;
+      }
+      alert("Upload successful. League and settings updated.");
+    };
+    reader.readAsArrayBuffer(file);
+  }
+</script>
+
 
   <br><center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
   <br><center>Build v7.0.1 | Weather Widget Added for Next Comp</center>
