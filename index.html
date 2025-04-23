@@ -152,51 +152,78 @@
         updateLeague(history);
       });
 
-    function updateLeague(data) {
-      const netScores={}, netWins={}, totalPts={}, totalWin={}, rounds={};
-      data.forEach(e=>{
-        const n = parseFloat(e.Score);
-        if (isNaN(n)) return;
-        netScores[e.Name] = netScores[e.Name]||[];
-        rounds[e.Competition] = rounds[e.Competition]||[];
-        netScores[e.Name].push(n);
-        rounds[e.Competition].push({name:e.Name,position:+e.Position});
-        totalPts[e.Name] = (totalPts[e.Name]||0) + (parseFloat(e.Points)||0);
-        totalWin[e.Name] = (totalWin[e.Name]||0) + (parseFloat(e.Winnings)||0);
-      });
-      Object.values(rounds).forEach(r=>{
-        r.filter(p=>p.position===1)
-         .forEach(p=> netWins[p.name] = (netWins[p.name]||0) + 1);
-      });
-      const players = Object.keys(netScores).map(name=>{
-        const g = netScores[name].length, w = netWins[name]||0;
-        return { name, games:g, winPct:((w/g)*100).toFixed(1), points:totalPts[name]||0, winnings:totalWin[name]||0, trophies:w };
-      }).sort((a,b)=>{
-        if (b.points!==a.points) return b.points-a.points;
-        if (b.trophies!==a.trophies) return b.trophies-a.trophies;
-        if (+b.winPct!==+a.winPct) return +b.winPct - +a.winPct;
-        if (b.winnings!==a.winnings) return b.winnings-a.winnings;
-        return a.name.localeCompare(b.name);
-      });
+      function updateLeague(data) {
+         // NEW: track every round, even non-numeric scores
+         const gamesPlayed = {};
 
-      const tbody = document.querySelector("#league-table tbody");
-      tbody.innerHTML = '';
-      players.forEach((p,i)=>{
-        const won = history.filter(e=>e.Name===p.name && +e.Position===1).map(e=>e.Competition);
-        const trophySpan = won.length
-          ? `<span class="trophy" onclick="toggleTooltip(this)">${'🏆'.repeat(won.length)}<span class="tooltip-bubble">${won.join(', ')}</span></span>`
-          : '';
-        tbody.innerHTML += `<tr>
-            <td>${i+1}</td>
-            <td><a href="#" onclick="event.preventDefault(); showPlayerModal('${p.name}')">${p.name}</a></td>
-            <td>${p.games}</td>
-            <td>${p.winPct}%</td>
-            <td>${p.points}</td>
-            <td>£${p.winnings.toFixed(2)}</td>
-            <td>${trophySpan}</td>
-          </tr>`;
-      });
-    }
+         const netScores  = {},
+               netWins    = {},
+               totalPts   = {},
+               totalWin   = {},
+               rounds     = {};
+
+         data.forEach(e => {
+           // count this row as a game, regardless of whether Score is numeric
+           gamesPlayed[e.Name] = (gamesPlayed[e.Name] || 0) + 1;
+
+           const n = parseFloat(e.Score);
+           if (isNaN(n)) return;           // skip non-numeric scores
+
+           netScores[e.Name] = netScores[e.Name] || [];
+           netScores[e.Name].push(n);
+
+           rounds[e.Competition] = rounds[e.Competition] || [];
+           rounds[e.Competition].push({ name: e.Name, position: +e.Position });
+
+           totalPts[e.Name] = (totalPts[e.Name] || 0) + (parseFloat(e.Points)   || 0);
+           totalWin[e.Name] = (totalWin[e.Name] || 0) + (parseFloat(e.Winnings) || 0);
+         });
+
+         // count wins per player
+         Object.values(rounds).forEach(r => {
+           r.filter(p => p.position === 1)
+            .forEach(p => netWins[p.name] = (netWins[p.name] || 0) + 1);
+         });
+
+         const players = Object.keys(gamesPlayed).map(name => {
+           const g = gamesPlayed[name] || 0;
+           const w = netWins[name]      || 0;
+           return {
+             name,
+             games:    g,
+             winPct:   g ? ((w / g) * 100).toFixed(1) : "0.0",
+             points:   totalPts[name]   || 0,
+             winnings: totalWin[name]   || 0,
+             trophies: w
+           };
+         }).sort((a,b) => {
+           if (b.points   !== a.points)    return b.points   - a.points;
+           if (b.trophies !== a.trophies)  return b.trophies - a.trophies;
+           if (+b.winPct  !== +a.winPct)   return +b.winPct  - +a.winPct;
+           if (b.winnings !== a.winnings)  return b.winnings - a.winnings;
+           return a.name.localeCompare(b.name);
+         });
+
+         const tbody = document.querySelector("#league-table tbody");
+         tbody.innerHTML = '';
+         players.forEach((p,i) => {
+           const won = Object.entries(rounds)
+             .filter(([, arr]) => arr.some(x => x.name === p.name && x.position === 1))
+             .map(([comp]) => comp);
+           const trophySpan = won.length
+             ? `<span class=\"trophy\" onclick=\"toggleTooltip(this)\">${'🏆'.repeat(won.length)}<span class=\"tooltip-bubble\">${won.join(', ')}</span></span>`
+             : '';
+           tbody.innerHTML += `<tr>
+               <td>${i+1}</td>
+               <td><a href="#" onclick="event.preventDefault(); showPlayerModal('${p.name}')">${p.name}</a></td>
+               <td>${p.games}</td>
+               <td>${p.winPct}%</td>
+               <td>${p.points}</td>
+               <td>£${p.winnings.toFixed(2)}</td>
+               <td>${trophySpan}</td>
+             </tr>`;
+         });
+       }
 
     function toggleTooltip(el){ document.querySelectorAll('.trophy.show-tooltip').forEach(t=> t!==el && t.classList.remove('show-tooltip')); el.classList.toggle('show-tooltip'); }
     document.addEventListener('click', e=>{ if (!e.target.closest('.trophy')) document.querySelectorAll('.trophy.show-tooltip').forEach(t=>t.classList.remove('show-tooltip')); });

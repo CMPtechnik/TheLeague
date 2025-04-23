@@ -81,10 +81,9 @@
 
   <div id="nextCompetition">
     Next Competition: <span id="nextCompetitionText">TBD</span>
-  </div>
-  <div id="weatherWidget" class="rounded-xl p-4 shadow-md text-center text-sm" style="max-width:1100px;margin:1rem auto;background:var(--accent);color:var(--text);">
-    <div class="font-bold text-base">Weather Forecast</div>
-    <div id="weatherDetails">Loading weather...</div>
+  <div id="weather-widget" class="rounded-xl p-4 shadow-md text-center text-sm" style="max-width:600px;margin:1rem auto;background:var(--accent);color:var(--text);"></div>
+
+    <div id="weatherDetails" style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;">Loading weather...</div>
   </div>
 
   <div class="modal" id="scoreModal">
@@ -156,51 +155,78 @@
         updateLeague(history);
       });
 
-    function updateLeague(data) {
-      const netScores={}, netWins={}, totalPts={}, totalWin={}, rounds={};
-      data.forEach(e=>{
-        const n = parseFloat(e.Score);
-        if (isNaN(n)) return;
-        netScores[e.Name] = netScores[e.Name]||[];
-        rounds[e.Competition] = rounds[e.Competition]||[];
-        netScores[e.Name].push(n);
-        rounds[e.Competition].push({name:e.Name,position:+e.Position});
-        totalPts[e.Name] = (totalPts[e.Name]||0) + (parseFloat(e.Points)||0);
-        totalWin[e.Name] = (totalWin[e.Name]||0) + (parseFloat(e.Winnings)||0);
-      });
-      Object.values(rounds).forEach(r=>{
-        r.filter(p=>p.position===1)
-         .forEach(p=> netWins[p.name] = (netWins[p.name]||0) + 1);
-      });
-      const players = Object.keys(netScores).map(name=>{
-        const g = netScores[name].length, w = netWins[name]||0;
-        return { name, games:g, winPct:((w/g)*100).toFixed(1), points:totalPts[name]||0, winnings:totalWin[name]||0, trophies:w };
-      }).sort((a,b)=>{
-        if (b.points!==a.points) return b.points-a.points;
-        if (b.trophies!==a.trophies) return b.trophies-a.trophies;
-        if (+b.winPct!==+a.winPct) return +b.winPct - +a.winPct;
-        if (b.winnings!==a.winnings) return b.winnings-a.winnings;
-        return a.name.localeCompare(b.name);
-      });
+      function updateLeague(data) {
+         // NEW: track every round, even non-numeric scores
+         const gamesPlayed = {};
 
-      const tbody = document.querySelector("#league-table tbody");
-      tbody.innerHTML = '';
-      players.forEach((p,i)=>{
-        const won = history.filter(e=>e.Name===p.name && +e.Position===1).map(e=>e.Competition);
-        const trophySpan = won.length
-          ? `<span class="trophy" onclick="toggleTooltip(this)">${'🏆'.repeat(won.length)}<span class="tooltip-bubble">${won.join(', ')}</span></span>`
-          : '';
-        tbody.innerHTML += `<tr>
-            <td>${i+1}</td>
-            <td><a href="#" onclick="event.preventDefault(); showPlayerModal('${p.name}')">${p.name}</a></td>
-            <td>${p.games}</td>
-            <td>${p.winPct}%</td>
-            <td>${p.points}</td>
-            <td>£${p.winnings.toFixed(2)}</td>
-            <td>${trophySpan}</td>
-          </tr>`;
-      });
-    }
+         const netScores  = {},
+               netWins    = {},
+               totalPts   = {},
+               totalWin   = {},
+               rounds     = {};
+
+         data.forEach(e => {
+           // count this row as a game, regardless of whether Score is numeric
+           gamesPlayed[e.Name] = (gamesPlayed[e.Name] || 0) + 1;
+
+           const n = parseFloat(e.Score);
+           if (isNaN(n)) return;           // skip non-numeric scores
+
+           netScores[e.Name] = netScores[e.Name] || [];
+           netScores[e.Name].push(n);
+
+           rounds[e.Competition] = rounds[e.Competition] || [];
+           rounds[e.Competition].push({ name: e.Name, position: +e.Position });
+
+           totalPts[e.Name] = (totalPts[e.Name] || 0) + (parseFloat(e.Points)   || 0);
+           totalWin[e.Name] = (totalWin[e.Name] || 0) + (parseFloat(e.Winnings) || 0);
+         });
+
+         // count wins per player
+         Object.values(rounds).forEach(r => {
+           r.filter(p => p.position === 1)
+            .forEach(p => netWins[p.name] = (netWins[p.name] || 0) + 1);
+         });
+
+         const players = Object.keys(gamesPlayed).map(name => {
+           const g = gamesPlayed[name] || 0;
+           const w = netWins[name]      || 0;
+           return {
+             name,
+             games:    g,
+             winPct:   g ? ((w / g) * 100).toFixed(1) : "0.0",
+             points:   totalPts[name]   || 0,
+             winnings: totalWin[name]   || 0,
+             trophies: w
+           };
+         }).sort((a,b) => {
+           if (b.points   !== a.points)    return b.points   - a.points;
+           if (b.trophies !== a.trophies)  return b.trophies - a.trophies;
+           if (+b.winPct  !== +a.winPct)   return +b.winPct  - +a.winPct;
+           if (b.winnings !== a.winnings)  return b.winnings - a.winnings;
+           return a.name.localeCompare(b.name);
+         });
+
+         const tbody = document.querySelector("#league-table tbody");
+         tbody.innerHTML = '';
+         players.forEach((p,i) => {
+           const won = Object.entries(rounds)
+             .filter(([, arr]) => arr.some(x => x.name === p.name && x.position === 1))
+             .map(([comp]) => comp);
+           const trophySpan = won.length
+             ? `<span class=\"trophy\" onclick=\"toggleTooltip(this)\">${'🏆'.repeat(won.length)}<span class=\"tooltip-bubble\">${won.join(', ')}</span></span>`
+             : '';
+           tbody.innerHTML += `<tr>
+               <td>${i+1}</td>
+               <td><a href="#" onclick="event.preventDefault(); showPlayerModal('${p.name}')">${p.name}</a></td>
+               <td>${p.games}</td>
+               <td>${p.winPct}%</td>
+               <td>${p.points}</td>
+               <td>£${p.winnings.toFixed(2)}</td>
+               <td>${trophySpan}</td>
+             </tr>`;
+         });
+       }
 
     function toggleTooltip(el){ document.querySelectorAll('.trophy.show-tooltip').forEach(t=> t!==el && t.classList.remove('show-tooltip')); el.classList.toggle('show-tooltip'); }
     document.addEventListener('click', e=>{ if (!e.target.closest('.trophy')) document.querySelectorAll('.trophy.show-tooltip').forEach(t=>t.classList.remove('show-tooltip')); });
@@ -287,54 +313,79 @@
 
     function closeModal(){ document.getElementById('scoreModal').style.display='none'; }
     function toggleDarkMode(){ document.body.classList.toggle('dark-mode'); }
-    
-     // Existing script logic remains above here...
+  </script>
 
-     const WEATHER_API_KEY = "1ebbaaed884c07a3905bb67c72f9b8e4";
-     const LOCATION = "Cheadle,UK";
+<script>
+  const WEATHER_API_KEY = "e583bd0c194bbfeb3deb92f6bfdad11a";
+  const LOCATION = "Cheadle,UK";
 
-     function fetchWeatherForNextComp(nextCompText) {
-       const match = nextCompText.match(/\d{1,2}\s\w+/);
-       if (!match) return;
+  function extractDateFromText(text) {
+    let date = null;
+    const slashMatch = text.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+    if (slashMatch) {
+      const [_, day, month, year] = slashMatch;
+      date = new Date(`${year}-${month}-${day}`);
+    } else {
+      const wordMatch = text.match(/\b(\d{1,2})\s(\w+)/);
+      if (wordMatch) {
+        const [_, day, monthName] = wordMatch;
+        const year = new Date().getFullYear();
+        date = new Date(`${day} ${monthName} ${year}`);
+      }
+    }
+    return date;
+  }
 
-       const compDateStr = match[0] + ' ' + new Date().getFullYear();
-       const compDate = new Date(compDateStr);
+  function fetchWeatherForNextComp(nextCompText) {
+    const compDate = extractDateFromText(nextCompText);
+    if (!compDate) return;
 
-       fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${LOCATION}&appid=${WEATHER_API_KEY}&units=metric`)
-         .then(res => res.json())
-         .then(data => {
-           const forecast = data.list.find(item => {
-             const forecastDate = new Date(item.dt_txt);
-             return forecastDate.toDateString() === compDate.toDateString();
-           });
-           if (forecast) {
-             const iconUrl = `https://openweathermap.org/img/wn/${forecast.weather[0].icon}@2x.png`;
-             document.getElementById("weatherDetails").innerHTML = `
-               <img src="${iconUrl}" alt="${forecast.weather[0].description}" style="height:50px;">
-               <div>${forecast.weather[0].main} (${forecast.weather[0].description})</div>
-               <div>Temp: ${Math.round(forecast.main.temp)}°C</div>
-             `;
-           } else {
-             document.getElementById("weatherDetails").innerText = "No forecast available yet.";
-           }
-         })
-         .catch(() => {
-           document.getElementById("weatherDetails").innerText = "Unable to load weather.";
-         });
-     }
+    fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${LOCATION}&appid=${WEATHER_API_KEY}&units=metric`)
+      .then(res => res.json())
+      .then(data => {
+        const forecasts = data.list.filter(item => {
+          const forecastDate = new Date(item.dt_txt);
+          return forecastDate.getDate() === compDate.getDate() &&
+                 forecastDate.getMonth() === compDate.getMonth() &&
+                 forecastDate.getFullYear() === compDate.getFullYear();
+        });
 
-     const nextCompEl = document.getElementById('nextCompetitionText');
-     const observer = new MutationObserver(() => {
-       if (nextCompEl.innerText !== 'TBD') {
-         fetchWeatherForNextComp(nextCompEl.innerText);
-         observer.disconnect();
-       }
-     });
-     observer.observe(nextCompEl, { childList: true });
-   </script>
+        let forecast = forecasts.find(f => f.dt_txt.includes('12:00:00')) ||
+                       forecasts.find(f => f.dt_txt.includes('15:00:00')) ||
+                       forecasts[0];
+
+        const container = document.getElementById("weatherDetails");
+        if (forecast) {
+          const iconUrl = `https://openweathermap.org/img/wn/${forecast.weather[0].icon}@4x.png`;
+          const windSpeedMph = (forecast.wind.speed * 2.23694).toFixed(1);
+          container.innerHTML = `
+            <img src="${iconUrl}" alt="${forecast.weather[0].description}" style="height:60px;filter:drop-shadow(0 0 3px rgba(0,0,0,0.5));">
+            <div>${forecast.weather[0].main} (${forecast.weather[0].description})</div>
+            <div>Temp: ${Math.round(forecast.main.temp)}°C</div>
+            <div>Wind: ${windSpeedMph} mph</div>
+          `;
+        } else {
+          container.innerHTML = "<div>No forecast available yet for this date.</div>";
+        }
+      })
+      .catch((err) => {
+        console.error("Weather API error:", err);
+        document.getElementById("weatherDetails").innerHTML = "<div>Unable to load weather.</div>";
+      });
+  }
+
+  const nextCompEl = document.getElementById('nextCompetitionText');
+  const observer = new MutationObserver(() => {
+    if (nextCompEl.innerText !== 'TBD') {
+      fetchWeatherForNextComp(nextCompEl.innerText);
+      observer.disconnect();
+    }
+  });
+  observer.observe(nextCompEl, { childList: true });
+</script>
 
   <br><center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
-  <br><center>Build v6.0.0 | Table Ranking Logic & Rules Pages</center>
+  <br><center>Build v7.0.1 | Weather Widget Added for Next Comp</center>
   <br><center><a href="https://www.theapplegeek.co.uk" target="_blank">The Apple Geek Data Solutions</a></center>
 </body>
 </html>
