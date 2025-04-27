@@ -106,7 +106,8 @@
 
           const section = document.createElement('section');
           const header = document.createElement('h2');
-          header.textContent = `${c.title} — ${c.date.toLocaleDateString()}`;
+          header.textContent = `${c.title} — ${c.date.toLocaleDateString('en-GB')}`;
+
           section.appendChild(header);
 
           const table = document.createElement('table');
