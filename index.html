@@ -97,10 +97,10 @@
       <div class="modal-filter">
         <label for="modalTypeFilter">Show:</label>
         <select id="modalTypeFilter">
-          <option value="All">All Types</option>
+          <option value="18H Strokeplay">Strokeplay (Medals)</option>
           <option value="18H Stableford">Stableford</option>
           <option value="9H Stableford">Pros Roll Up</option>
-          <option value="18H Strokeplay">Strokeplay (Medals)</option>
+          <option value="All">All Types</option>
         </select>
       </div>
 
@@ -265,7 +265,7 @@
         if (isStable) {
           datasets.push({ label: primaryLabel, data: primaryData, borderColor:'blue', fill:false });
         } else {
-          datasets.push({ label:'Net Score', data: primaryData, borderColor:'blue', fill:false });
+          datasets.push({ label:'Score', data: primaryData, borderColor:'blue', fill:false });
           datasets.push({ label:'Par 64',    data:new Array(labels.length).fill(64), borderColor:'red', borderDash:[5,5], fill:false });
           // datasets.push({ label:'Par 32',    data:new Array(labels.length).fill(32), borderColor:'purple', borderDash:[5,5], fill:false });
         }
