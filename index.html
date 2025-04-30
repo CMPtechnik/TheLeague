@@ -97,10 +97,10 @@
       <div class="modal-filter">
         <label for="modalTypeFilter">Show:</label>
         <select id="modalTypeFilter">
-          <option value="All">All Types</option>
+          <option value="18H Strokeplay">Strokeplay (Medals)</option>
           <option value="18H Stableford">Stableford</option>
           <option value="9H Stableford">Pros Roll Up</option>
-          <option value="18H Strokeplay">Strokeplay (Medals)</option>
+          <option value="All">All Types</option>
         </select>
       </div>
 
@@ -265,7 +265,7 @@
         if (isStable) {
           datasets.push({ label: primaryLabel, data: primaryData, borderColor:'blue', fill:false });
         } else {
-          datasets.push({ label:'Net Score', data: primaryData, borderColor:'blue', fill:false });
+          datasets.push({ label:'Score', data: primaryData, borderColor:'blue', fill:false });
           datasets.push({ label:'Par 64',    data:new Array(labels.length).fill(64), borderColor:'red', borderDash:[5,5], fill:false });
           // datasets.push({ label:'Par 32',    data:new Array(labels.length).fill(32), borderColor:'purple', borderDash:[5,5], fill:false });
         }
@@ -394,9 +394,9 @@
     });
     observer.observe(nextCompEl, { childList: true });
   </script>
-
   <br><center><img src="https://cheadlegolf.com/wp-content/uploads/2016/08/CGC-logo-HR-02.png" alt="cgc Logo" width="100" height="100"/></center>
   <br><center>Build v7.0.1 | Weather Widget Added for Next Comp</center>
-  <br><center><a href="https://www.theapplegeek.co.uk" target="_blank">The Apple Geek Data Solutions</a></center>
+  <center><img src="TAG.PNG" alt="The Apple Geek" width="100" height="100"></center>
+  <center><a href="https://www.theapplegeek.co.uk" target="_blank">The Apple Geek Data Solutions</a></center>
 </body>
 </html>
